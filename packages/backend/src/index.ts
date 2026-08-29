@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
-import { menuItems } from './db/schema.js'
+import { recipes } from './db/schema.js'
 
 const app = new Hono<{ Bindings: CloudflareBindings }>()
 
@@ -15,11 +15,11 @@ app.get('/api/health', (context) => {
   })
 })
 
-app.get('/api/menu-items', async (context) => {
+app.get('/api/recipes', async (context) => {
   const db = drizzle(context.env.DB)
-  const items = await db.select().from(menuItems).orderBy(menuItems.createdAt)
+  const recipeRows = await db.select().from(recipes).orderBy(recipes.createdAt)
 
-  return context.json({ items })
+  return context.json({ recipes: recipeRows })
 })
 
 app.onError((error, context) => {
