@@ -1,26 +1,36 @@
+import type { D1Database } from '@cloudflare/workers-types/index.ts'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
 import { recipes } from './db/schema.js'
 
-const app = new Hono<{ Bindings: CloudflareBindings }>()
+type Bindings = {
+  DB: D1Database
+}
 
-app.get('/', (context) => {
-  return context.json({ message: 'Menu API' })
-})
-
-app.get('/api/health', (context) => {
-  return context.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
+const app = new Hono<{ Bindings: Bindings }>()
+  .get('/', (context) => {
+    return context.json({ message: 'Menu API' })
   })
-})
+  .get('/api/health', (context) => {
+    return context.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+    })
+  })
+  .get('/api/recipes', async (context) => {
+    const db = drizzle(context.env.DB)
+    const recipeRows = await db
+      .select()
+      .from(recipes)
+      .orderBy(recipes.createdAt)
 
-app.get('/api/recipes', async (context) => {
-  const db = drizzle(context.env.DB)
-  const recipeRows = await db.select().from(recipes).orderBy(recipes.createdAt)
-
-  return context.json({ recipes: recipeRows })
-})
+    return context.json(
+      {
+        recipes: recipeRows,
+      },
+      200,
+    )
+  })
 
 app.onError((error, context) => {
   console.error(
@@ -34,3 +44,5 @@ app.onError((error, context) => {
 })
 
 export default app
+
+export type AppType = typeof app
