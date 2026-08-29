@@ -1,5 +1,5 @@
-import { Hono } from 'hono'
 import { drizzle } from 'drizzle-orm/d1'
+import { Hono } from 'hono'
 import { menuItems } from './db/schema.js'
 
 const app = new Hono<{ Bindings: CloudflareBindings }>()

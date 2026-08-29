@@ -1,4 +1,3 @@
-import { useQuery } from '@tanstack/react-query'
 import { Button } from '@astryxdesign/core/Button'
 import {
   HStack,
@@ -9,6 +8,7 @@ import {
 } from '@astryxdesign/core/Layout'
 import { StatusDot } from '@astryxdesign/core/StatusDot'
 import { Heading, Text } from '@astryxdesign/core/Text'
+import { useQuery } from '@tanstack/react-query'
 import { Link, Route, Routes } from 'react-router-dom'
 
 type HealthResponse = {
@@ -52,8 +52,7 @@ function Home() {
               </Text>
               <Heading level={1}>Menu</Heading>
               <Text>
-                React Router、TanStack Query、Hono、Astryx
-                の準備ができました。
+                React Router、TanStack Query、Hono、Astryx の準備ができました。
               </Text>
             </VStack>
 

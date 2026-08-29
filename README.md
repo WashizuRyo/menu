@@ -7,6 +7,17 @@ Bun workspaces を使った TypeScript モノレポです。
 - `packages/frontend`: Vite + React + React Router + TanStack Query + Astryx
 - `packages/backend`: Cloudflare Workers + Hono + Drizzle ORM + D1
 
+## インフラ構成
+
+本番環境はCloudflare Workersにデプロイします。Cloudflare Pagesは使用せず、1つのWorkerでFrontendとBackendを配信します。
+
+```text
+https://menu-backend.appnest.workers.dev
+├── /api/*  → Cloudflare Worker（Hono API）
+│              └── D1 binding: DB → Cloudflare D1（menu）
+└── その他  → Workers Static Assets（Reactのビルド成果物）
+```
+
 ## セットアップ
 
 ```bash
