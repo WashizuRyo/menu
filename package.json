@@ -9,10 +9,15 @@
   "scripts": {
     "dev": "bun run --filter '*' dev",
     "build": "bun run --filter '*' build",
+    "test": "bun test --pass-with-no-tests",
+    "format": "biome check --write .",
     "typecheck": "bun run --filter '*' typecheck",
     "deploy": "bun run --cwd packages/frontend build && bun run --cwd packages/backend db:migrate:remote && bun run --cwd packages/backend deploy"
   },
   "engines": {
     "bun": "1.3.4"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.11"
   }
 }
