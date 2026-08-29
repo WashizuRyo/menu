@@ -3,9 +3,14 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "dev": "wrangler d1 migrations apply menu --local && wrangler dev --port 3000",
     "build": "wrangler deploy --dry-run --outdir dist",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "deploy": "bun run db:migrate:remote && wrangler deploy",
     "deploy:preview": "wrangler versions upload",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
@@ -15,6 +20,7 @@
     "db:migrate:remote": "wrangler d1 migrations apply menu --remote"
   },
   "dependencies": {
+    "@menu/shared": "workspace:*",
     "drizzle-orm": "0.45.2",
     "hono": "4.13.5"
   },
@@ -23,6 +29,7 @@
     "@types/node": "26.4.0",
     "drizzle-kit": "0.31.10",
     "typescript": "5.9.3",
+    "vitest": "4.1.11",
     "wrangler": "4.127.1"
   }
 }
