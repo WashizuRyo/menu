@@ -136,6 +136,28 @@ describe('POST /api/recipes', () => {
     })
   })
 
+  test.each([
+    'https://www.youtube.com?app=desktop',
+    'https://www.youtube.com#featured',
+  ])(
+    'ホスト直後にクエリまたはフラグメントを含むYouTube URLを受け付ける',
+    async (url) => {
+      const response = await server.fetch('/api/recipes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...validCreateRecipeInput,
+          source: { type: 'youtube', url },
+        }),
+      })
+
+      expect(response.status).toBe(201)
+      expect(await response.json()).toMatchObject({
+        recipe: { source: { type: 'youtube', url } },
+      })
+    },
+  )
+
   test('不正な入力の場合は400を返す', async () => {
     const response = await server.fetch('/api/recipes', {
       method: 'POST',

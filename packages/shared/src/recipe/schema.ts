@@ -90,7 +90,7 @@ export const recipeSourceSchema = v.variant('type', [
       v.maxLength(2_048, 'YouTube URLは2048文字以内で入力してください'),
       v.url('正しいYouTube URLを入力してください'),
       v.regex(
-        /^https?:\/\/(?:(?:[a-z0-9-]+\.)*youtube\.com|(?:[a-z0-9-]+\.)*youtube-nocookie\.com|youtu\.be)(?=[:/]|$)/i,
+        /^https?:\/\/(?:(?:[a-z0-9-]+\.)*youtube\.com|(?:[a-z0-9-]+\.)*youtube-nocookie\.com|youtu\.be)(?=[:/?#]|$)/i,
         'YouTubeのURLを入力してください',
       ),
     ),
