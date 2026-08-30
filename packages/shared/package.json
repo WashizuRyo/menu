@@ -9,6 +9,9 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "dependencies": {
+    "valibot": "1.4.2"
+  },
   "devDependencies": {
     "typescript": "5.9.3"
   }
