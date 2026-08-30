@@ -21,9 +21,11 @@ https://menu-backend.appnest.workers.dev
 ## セットアップ
 
 ```bash
-bun install
+bun run setup:local
 bun run dev
 ```
+
+`setup:local` は依存関係のインストール後、ローカルD1にマイグレーションとseedを適用します。Zedから新しいworktreeを作成した場合は自動実行されます。Zed以外でworktreeを作成した場合は、このコマンドを1度実行してください。
 
 - Frontend: http://localhost:5173
 - Backend: http://localhost:3000
@@ -34,10 +36,11 @@ bun run dev
 ## コマンド
 
 ```bash
-bun run dev        # Frontend と Backend を起動
-bun run build      # 全パッケージをビルド
-bun run format     # 全パッケージをフォーマット
-bun run test     # 全パッケージをテスト
-bun run typecheck  # 全パッケージを型チェック
-bun run deploy     # Cloudflareへデプロイ
+bun run setup:local # 依存関係とローカルD1をセットアップ
+bun run dev         # Frontend と Backend を起動
+bun run build       # 全パッケージをビルド
+bun run format      # 全パッケージをフォーマット
+bun run test        # 全パッケージをテスト
+bun run typecheck   # 全パッケージを型チェック
+bun run deploy      # Cloudflareへデプロイ
 ```
