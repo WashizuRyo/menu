@@ -9,10 +9,6 @@
 - `packages/backend`: Cloudflare Workers、Hono、Drizzle ORM、D1
 - `packages/shared`: Frontend と Backend で共有する TypeScript コード
 
-各ディレクトリに追加の `AGENTS.md` がある場合は、その内容も適用してください。
-特に Frontend の作業では `packages/frontend/AGENTS.md` の Astryx のルールに
-従ってください。
-
 ## 主要なコマンド
 
 コマンドはリポジトリのルートで実行してください。
