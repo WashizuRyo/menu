@@ -3,7 +3,7 @@ import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
 import { recipes } from './db/schema.js'
 
-type Bindings = {
+interface Bindings {
   DB: D1Database
 }
 
