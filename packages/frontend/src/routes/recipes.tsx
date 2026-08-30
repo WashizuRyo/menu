@@ -14,9 +14,18 @@ import { Spinner } from '@astryxdesign/core/Spinner'
 import { Heading, Text } from '@astryxdesign/core/Text'
 import { Timestamp } from '@astryxdesign/core/Timestamp'
 import type { RecipeIngredient, RecipeIngredientQuantity } from '@menu/shared'
-import { useQuery } from '@tanstack/react-query'
-import { Navigate, Route, Routes } from 'react-router-dom'
-import { getRecipes } from './lib/api/recipe'
+import { useSuspenseQuery } from '@tanstack/react-query'
+import {
+  createFileRoute,
+  type ErrorComponentProps,
+} from '@tanstack/react-router'
+import { getRecipes } from '../lib/api/recipe'
+
+export const Route = createFileRoute('/recipes')({
+  component: RecipesPage,
+  pendingComponent: RecipesPending,
+  errorComponent: RecipesError,
+})
 
 function formatQuantity(quantity: RecipeIngredientQuantity): string {
   if (quantity.type === 'numeric') {
@@ -40,7 +49,7 @@ function formatIngredients(ingredients: RecipeIngredient[]): string {
 }
 
 function RecipesPage() {
-  const recipes = useQuery({
+  const recipes = useSuspenseQuery({
     queryKey: ['recipes'],
     queryFn: getRecipes,
   })
@@ -60,25 +69,7 @@ function RecipesPage() {
               </Text>
             </VStack>
 
-            {recipes.isPending ? (
-              <Section padding={6} aria-live="polite">
-                <Spinner label="レシピを読み込み中…" />
-              </Section>
-            ) : recipes.isError ? (
-              <Banner
-                status="error"
-                title="レシピを取得できませんでした"
-                description={recipes.error.message}
-                endContent={
-                  <Button
-                    label="再読み込み"
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => void recipes.refetch()}
-                  />
-                }
-              />
-            ) : recipes.data.recipes.length === 0 ? (
+            {recipes.data.recipes.length === 0 ? (
               <EmptyState
                 title="レシピがありません"
                 description="APIにレシピが登録されるとここに表示されます。"
@@ -147,11 +138,46 @@ function RecipesPage() {
   )
 }
 
-export function App() {
+function RecipesPending() {
   return (
-    <Routes>
-      <Route path="/recipes" element={<RecipesPage />} />
-      <Route path="*" element={<Navigate to="/recipes" replace />} />
-    </Routes>
+    <Layout
+      height="auto"
+      contentWidth={960}
+      padding={6}
+      content={
+        <LayoutContent role="main">
+          <Section padding={6} aria-live="polite">
+            <Spinner label="レシピ画面を読み込み中…" />
+          </Section>
+        </LayoutContent>
+      }
+    />
+  )
+}
+
+function RecipesError({ error, reset }: ErrorComponentProps) {
+  return (
+    <Layout
+      height="auto"
+      contentWidth={960}
+      padding={6}
+      content={
+        <LayoutContent role="main">
+          <Banner
+            status="error"
+            title="レシピ画面を表示できませんでした"
+            description={error.message}
+            endContent={
+              <Button
+                label="再試行"
+                size="sm"
+                variant="secondary"
+                onClick={reset}
+              />
+            }
+          />
+        </LayoutContent>
+      }
+    />
   )
 }

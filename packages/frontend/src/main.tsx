@@ -1,10 +1,10 @@
 import { Theme } from '@astryxdesign/core/theme'
 import { neutralTheme } from '@astryxdesign/theme-neutral/built'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { RouterProvider } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
-import { App } from './App'
+import { router } from './router'
 import '@astryxdesign/core/reset.css'
 import '@astryxdesign/core/astryx.css'
 import '@astryxdesign/theme-neutral/theme.css'
@@ -28,9 +28,7 @@ createRoot(rootElement).render(
   <StrictMode>
     <Theme theme={neutralTheme}>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
+        <RouterProvider router={router} />
       </QueryClientProvider>
     </Theme>
   </StrictMode>,
