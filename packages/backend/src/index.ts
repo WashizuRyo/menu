@@ -2,6 +2,7 @@ import type { D1Database } from '@cloudflare/workers-types/index.ts'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
 import { recipes } from './db/schema.js'
+import { toRecipe } from './mapper/recipe.js'
 
 interface Bindings {
   DB: D1Database
@@ -26,7 +27,7 @@ const app = new Hono<{ Bindings: Bindings }>()
 
     return context.json(
       {
-        recipes: recipeRows,
+        recipes: recipeRows.map(toRecipe),
       },
       200,
     )
