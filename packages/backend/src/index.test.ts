@@ -1,4 +1,4 @@
-import type { Recipe } from '@menu/shared'
+import type { CreateRecipeInput, Recipe } from '@menu/shared'
 import {
   afterAll,
   afterEach,
@@ -97,5 +97,81 @@ describe('GET /api/recipes', () => {
 
     expect(response.status).toBe(500)
     expect(await response.json()).toEqual({ error: 'Internal Server Error' })
+  })
+})
+
+describe('POST /api/recipes', () => {
+  const validCreateRecipeInput = {
+    name: '味噌汁',
+    ingredients: [
+      { name: '豆腐', quantity: { type: 'numeric', value: 1, unit: '丁' } },
+    ],
+    instructions: ['だしを沸かす', '豆腐と味噌を加える'],
+    source: { type: 'manual' },
+  } satisfies CreateRecipeInput
+
+  test('レシピを作成して返す', async () => {
+    const response = await server.fetch('/api/recipes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(validCreateRecipeInput),
+    })
+
+    expect(response.status).toBe(201)
+    expect(await response.json()).toEqual({
+      recipe: {
+        id: 1,
+        name: '味噌汁',
+        ingredients: [
+          {
+            name: '豆腐',
+            quantity: { type: 'numeric', value: 1, unit: '丁' },
+          },
+        ],
+        instructions: ['だしを沸かす', '豆腐と味噌を加える'],
+        source: { type: 'manual' },
+        createdAt: expect.any(String),
+        updatedAt: expect.any(String),
+      },
+    })
+  })
+
+  test('不正な入力の場合は400を返す', async () => {
+    const response = await server.fetch('/api/recipes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...validCreateRecipeInput,
+        name: '',
+      }),
+    })
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ error: 'validation failed' })
+  })
+
+  test('リクエストボディが256 KiBを超える場合は413を返す', async () => {
+    const response = await server.fetch('/api/recipes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...validCreateRecipeInput,
+        name: 'a'.repeat(256 * 1024),
+      }),
+    })
+
+    expect(response.status).toBe(413)
+    expect(await response.json()).toEqual({ error: 'request too large' })
+  })
+
+  test('不正なJSONの場合は400を返す', async () => {
+    const response = await server.fetch('/api/recipes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{',
+    })
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ error: 'Invalid JSON' })
   })
 })

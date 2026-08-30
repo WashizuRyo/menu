@@ -1,5 +1,6 @@
 import type * as v from 'valibot'
 import type {
+  createRecipeInputSchema,
   recipeIngredientAmountSchema,
   recipeIngredientQuantitySchema,
   recipeIngredientSchema,
@@ -23,3 +24,4 @@ export type RecipeIngredient = v.InferOutput<typeof recipeIngredientSchema>
 export type RecipeSource = v.InferOutput<typeof recipeSourceSchema>
 
 export type Recipe = v.InferOutput<typeof recipeSchema>
+export type CreateRecipeInput = v.InferOutput<typeof createRecipeInputSchema>
