@@ -4,7 +4,6 @@
     "command": "bun",
     "args": ["run", "setup:local"],
     "cwd": "$ZED_WORKTREE_ROOT",
-    "env": { "CI": "true" },
     "hooks": ["create_worktree"],
     "reveal": "no_focus",
     "hide": "on_success"
