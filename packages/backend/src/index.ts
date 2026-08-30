@@ -4,7 +4,7 @@ import { Hono } from 'hono'
 import { recipes } from './db/schema.js'
 import { toRecipe } from './mapper/recipe.js'
 
-type Bindings = {
+interface Bindings {
   DB: D1Database
 }
 
