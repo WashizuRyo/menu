@@ -9,7 +9,8 @@
     "includes": [
       "**",
       "!!packages/backend/worker-configuration.d.ts",
-      "!!packages/backend/drizzle/meta"
+      "!!packages/backend/drizzle/meta",
+      "!!packages/frontend/src/routeTree.gen.ts"
     ]
   },
   "formatter": {

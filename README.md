@@ -4,7 +4,7 @@ Bun workspaces を使った TypeScript モノレポです。
 
 ## 構成
 
-- `packages/frontend`: Vite + React + React Router + TanStack Query + Astryx
+- `packages/frontend`: Vite + React + TanStack Router + TanStack Query + Astryx
 - `packages/backend`: Cloudflare Workers + Hono + Drizzle ORM + D1
 
 ## インフラ構成
