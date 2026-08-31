@@ -8,7 +8,6 @@ import {
   Section,
   VStack,
 } from '@astryxdesign/core/Layout'
-import { RadioList, RadioListItem } from '@astryxdesign/core/RadioList'
 import { Selector } from '@astryxdesign/core/Selector'
 import { Heading, Text } from '@astryxdesign/core/Text'
 import { TextArea } from '@astryxdesign/core/TextArea'
@@ -21,12 +20,11 @@ import {
   RECIPE_INGREDIENT_QUANTITY_TYPES,
   RECIPE_UNITS,
   type RecipeIngredientQuantityType,
-  type RecipeSourceType,
   recipeInstructionSchema,
+  recipeYoutubeUrlSchema,
 } from '@menu/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
 import {
   type Control,
   Controller,
@@ -44,19 +42,28 @@ const recipeInstructionFormSchema = v.pipe(
   v.transform(({ value }) => value),
 )
 
+const youtubeUrlFormSchema = v.pipe(
+  v.string(),
+  v.trim(),
+  v.union([v.literal(''), recipeYoutubeUrlSchema]),
+)
+
 const createRecipeFormSchema = v.strictObject({
-  ...createRecipeInputSchema.entries,
+  name: createRecipeInputSchema.entries.name,
+  ingredients: createRecipeInputSchema.entries.ingredients,
   instructions: v.pipe(
     v.array(recipeInstructionFormSchema),
     createRecipeInputSchema.entries.instructions,
   ),
+  youtubeUrl: youtubeUrlFormSchema,
 })
 
 type CreateRecipeFormValues = v.InferInput<typeof createRecipeFormSchema>
+type CreateRecipeFormOutput = v.InferOutput<typeof createRecipeFormSchema>
 type CreateRecipeFormControl = Control<
   CreateRecipeFormValues,
   unknown,
-  CreateRecipeInput
+  CreateRecipeFormOutput
 >
 
 const unitOptions = RECIPE_UNITS.map((unit) => ({
@@ -245,10 +252,10 @@ function NewRecipePage() {
     formState: { errors },
     getFieldState,
     handleSubmit,
-    setValue,
   } = useForm({
     defaultValues: {
       name: '',
+      youtubeUrl: '',
       ingredients: [
         {
           name: '',
@@ -260,14 +267,11 @@ function NewRecipePage() {
         },
       ],
       instructions: [{ value: '' }],
-      source: { type: 'manual' },
     },
     resolver: valibotResolver(createRecipeFormSchema),
   })
   const ingredients = useFieldArray({ control, name: 'ingredients' })
   const instructions = useFieldArray({ control, name: 'instructions' })
-  const [sourceType, setSourceType] = useState<RecipeSourceType | null>(null)
-
   const mutation = useMutation({
     mutationFn: createRecipe,
     onSuccess: async () => {
@@ -275,19 +279,6 @@ function NewRecipePage() {
       await navigate({ to: '/recipes' })
     },
   })
-
-  const handleSourceSelect = (type: RecipeSourceType) => {
-    setValue(
-      'source',
-      type === 'youtube' ? { type: 'youtube', url: '' } : { type: 'manual' },
-      { shouldDirty: true },
-    )
-    setSourceType(type)
-  }
-
-  if (sourceType === null) {
-    return <RecipeSourceSelection onSelect={handleSourceSelect} />
-  }
 
   return (
     <Layout
@@ -297,7 +288,14 @@ function NewRecipePage() {
       content={
         <LayoutContent role="main">
           <form
-            onSubmit={handleSubmit((formData) => mutation.mutate(formData))}
+            onSubmit={handleSubmit(({ youtubeUrl, ...formData }) =>
+              mutation.mutate({
+                ...formData,
+                source: youtubeUrl
+                  ? { type: 'youtube', url: youtubeUrl }
+                  : { type: 'manual' },
+              }),
+            )}
           >
             <VStack gap={6}>
               <VStack gap={2}>
@@ -328,6 +326,20 @@ function NewRecipePage() {
                         status={toAstryxInputStatus(fieldState.error?.message)}
                         placeholder="例：鶏肉と野菜のカレー"
                         hasAutoFocus
+                        width="100%"
+                      />
+                    )}
+                  />
+                  <Controller
+                    control={control}
+                    name="youtubeUrl"
+                    render={({ field, fieldState }) => (
+                      <TextInput
+                        label="YouTube URL（任意）"
+                        value={field.value}
+                        onChange={field.onChange}
+                        status={toAstryxInputStatus(fieldState.error?.message)}
+                        placeholder="例：https://www.youtube.com/watch?v=..."
                         width="100%"
                       />
                     )}
@@ -487,57 +499,6 @@ function NewRecipePage() {
               </HStack>
             </VStack>
           </form>
-        </LayoutContent>
-      }
-    />
-  )
-}
-
-function RecipeSourceSelection({
-  onSelect,
-}: {
-  onSelect: (type: RecipeSourceType) => void
-}) {
-  return (
-    <Layout
-      height="auto"
-      contentWidth={720}
-      padding={6}
-      content={
-        <LayoutContent role="main">
-          <VStack gap={6}>
-            <VStack gap={2}>
-              <Heading level={1}>新しいレシピ</Heading>
-              <Text color="secondary">
-                最初に、レシピの登録方法を選んでください。
-              </Text>
-            </VStack>
-
-            <Section padding={5}>
-              <RadioList
-                label="登録方法"
-                description="選択すると、レシピの入力フォームを表示します。"
-                value=""
-                onChange={(value) => onSelect(value as RecipeSourceType)}
-                orientation="horizontal"
-              >
-                <RadioListItem
-                  label="手入力"
-                  description="材料と作り方を入力します"
-                  value="manual"
-                />
-                <RadioListItem
-                  label="YouTube"
-                  description="動画のURLとレシピを入力します"
-                  value="youtube"
-                />
-              </RadioList>
-            </Section>
-
-            <HStack hAlign="end">
-              <Button label="キャンセル" variant="secondary" href="/recipes" />
-            </HStack>
-          </VStack>
         </LayoutContent>
       }
     />
