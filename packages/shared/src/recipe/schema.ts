@@ -55,23 +55,25 @@ export const recipeIngredientSchema = v.strictObject({
   quantity: recipeIngredientQuantitySchema,
 })
 
+export const recipeYoutubeUrlSchema = v.pipe(
+  v.string(),
+  v.trim(),
+  v.nonEmpty('YouTube URLを入力してください'),
+  v.maxLength(2_048, 'YouTube URLは2048文字以内で入力してください'),
+  v.url('正しいYouTube URLを入力してください'),
+  v.regex(
+    /^https?:\/\/(?:(?:[a-z0-9-]+\.)*youtube\.com|(?:[a-z0-9-]+\.)*youtube-nocookie\.com|youtu\.be)(?=[:/?#]|$)/i,
+    'YouTubeのURLを入力してください',
+  ),
+)
+
 export const recipeSourceSchema = v.variant('type', [
   v.strictObject({
     type: v.literal('manual'),
   }),
   v.strictObject({
     type: v.literal('youtube'),
-    url: v.pipe(
-      v.string(),
-      v.trim(),
-      v.nonEmpty('YouTube URLを入力してください'),
-      v.maxLength(2_048, 'YouTube URLは2048文字以内で入力してください'),
-      v.url('正しいYouTube URLを入力してください'),
-      v.regex(
-        /^https?:\/\/(?:(?:[a-z0-9-]+\.)*youtube\.com|(?:[a-z0-9-]+\.)*youtube-nocookie\.com|youtu\.be)(?=[:/?#]|$)/i,
-        'YouTubeのURLを入力してください',
-      ),
-    ),
+    url: recipeYoutubeUrlSchema,
   }),
 ])
 

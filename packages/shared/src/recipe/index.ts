@@ -15,6 +15,7 @@ export {
   recipeSchema,
   recipeSourceSchema,
   recipeUnitSchema,
+  recipeYoutubeUrlSchema,
 } from './schema.js'
 export type {
   CreateRecipeInput,

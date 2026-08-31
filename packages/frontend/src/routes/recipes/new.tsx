@@ -21,6 +21,7 @@ import {
   RECIPE_UNITS,
   type RecipeIngredientQuantityType,
   recipeInstructionSchema,
+  recipeYoutubeUrlSchema,
 } from '@menu/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
@@ -41,19 +42,28 @@ const recipeInstructionFormSchema = v.pipe(
   v.transform(({ value }) => value),
 )
 
+const youtubeUrlFormSchema = v.pipe(
+  v.string(),
+  v.trim(),
+  v.union([v.literal(''), recipeYoutubeUrlSchema]),
+)
+
 const createRecipeFormSchema = v.strictObject({
-  ...createRecipeInputSchema.entries,
+  name: createRecipeInputSchema.entries.name,
+  ingredients: createRecipeInputSchema.entries.ingredients,
   instructions: v.pipe(
     v.array(recipeInstructionFormSchema),
     createRecipeInputSchema.entries.instructions,
   ),
+  youtubeUrl: youtubeUrlFormSchema,
 })
 
 type CreateRecipeFormValues = v.InferInput<typeof createRecipeFormSchema>
+type CreateRecipeFormOutput = v.InferOutput<typeof createRecipeFormSchema>
 type CreateRecipeFormControl = Control<
   CreateRecipeFormValues,
   unknown,
-  CreateRecipeInput
+  CreateRecipeFormOutput
 >
 
 const unitOptions = RECIPE_UNITS.map((unit) => ({
@@ -245,6 +255,7 @@ function NewRecipePage() {
   } = useForm({
     defaultValues: {
       name: '',
+      youtubeUrl: '',
       ingredients: [
         {
           name: '',
@@ -256,7 +267,6 @@ function NewRecipePage() {
         },
       ],
       instructions: [{ value: '' }],
-      source: { type: 'manual' },
     },
     resolver: valibotResolver(createRecipeFormSchema),
   })
@@ -278,7 +288,14 @@ function NewRecipePage() {
       content={
         <LayoutContent role="main">
           <form
-            onSubmit={handleSubmit((formData) => mutation.mutate(formData))}
+            onSubmit={handleSubmit(({ youtubeUrl, ...formData }) =>
+              mutation.mutate({
+                ...formData,
+                source: youtubeUrl
+                  ? { type: 'youtube', url: youtubeUrl }
+                  : { type: 'manual' },
+              }),
+            )}
           >
             <VStack gap={6}>
               <VStack gap={2}>
@@ -315,27 +332,13 @@ function NewRecipePage() {
                   />
                   <Controller
                     control={control}
-                    name="source"
-                    render={({ field }) => (
+                    name="youtubeUrl"
+                    render={({ field, fieldState }) => (
                       <TextInput
                         label="YouTube URL（任意）"
-                        value={
-                          field.value.type === 'youtube' ? field.value.url : ''
-                        }
-                        onChange={(url) =>
-                          field.onChange(
-                            url === ''
-                              ? { type: 'manual' }
-                              : { type: 'youtube', url },
-                          )
-                        }
-                        status={toAstryxInputStatus(
-                          (
-                            getFieldState('source.url' as never) as {
-                              error?: { message?: string }
-                            }
-                          ).error?.message,
-                        )}
+                        value={field.value}
+                        onChange={field.onChange}
+                        status={toAstryxInputStatus(fieldState.error?.message)}
                         placeholder="例：https://www.youtube.com/watch?v=..."
                         width="100%"
                       />
