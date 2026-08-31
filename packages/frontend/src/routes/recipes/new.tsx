@@ -316,7 +316,7 @@ function NewRecipePage() {
                   <Controller
                     control={control}
                     name="source"
-                    render={({ field, fieldState }) => (
+                    render={({ field }) => (
                       <TextInput
                         label="YouTube URL（任意）"
                         value={
@@ -329,7 +329,13 @@ function NewRecipePage() {
                               : { type: 'youtube', url },
                           )
                         }
-                        status={toAstryxInputStatus(fieldState.error?.message)}
+                        status={toAstryxInputStatus(
+                          (
+                            getFieldState('source.url' as never) as {
+                              error?: { message?: string }
+                            }
+                          ).error?.message,
+                        )}
                         placeholder="例：https://www.youtube.com/watch?v=..."
                         width="100%"
                       />
