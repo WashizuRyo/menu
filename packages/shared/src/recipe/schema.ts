@@ -1,37 +1,15 @@
 import * as v from 'valibot'
+import {
+  RECIPE_INGREDIENT_AMOUNTS,
+  RECIPE_INGREDIENT_QUANTITY_TYPES,
+  RECIPE_UNITS,
+} from './constants.js'
 
-export const recipeUnitSchema = v.picklist([
-  'g',
-  'kg',
-  'ml',
-  'L',
-  '個',
-  '本',
-  '枚',
-  '片',
-  '束',
-  '玉',
-  '房',
-  '丁',
-  '袋',
-  'パック',
-  '缶',
-  '瓶',
-  '切れ',
-  '尾',
-  '大さじ',
-  '小さじ',
-  'カップ',
-  '合',
-])
+export const recipeUnitSchema = v.picklist(RECIPE_UNITS)
 
-export const recipeIngredientAmountSchema = v.picklist([
-  '少々',
-  '適量',
-  'ひとつまみ',
-  'お好みで',
-  '適宜',
-])
+export const recipeIngredientAmountSchema = v.picklist(
+  RECIPE_INGREDIENT_AMOUNTS,
+)
 
 const positiveQuantitySchema = v.pipe(
   v.number(),
@@ -42,18 +20,18 @@ const positiveQuantitySchema = v.pipe(
 export const recipeIngredientQuantitySchema = v.pipe(
   v.variant('type', [
     v.strictObject({
-      type: v.literal('numeric'),
+      type: v.literal(RECIPE_INGREDIENT_QUANTITY_TYPES.NUMERIC),
       value: positiveQuantitySchema,
       unit: recipeUnitSchema,
     }),
     v.strictObject({
-      type: v.literal('range'),
+      type: v.literal(RECIPE_INGREDIENT_QUANTITY_TYPES.RANGE),
       min: positiveQuantitySchema,
       max: positiveQuantitySchema,
       unit: recipeUnitSchema,
     }),
     v.strictObject({
-      type: v.literal('qualitative'),
+      type: v.literal(RECIPE_INGREDIENT_QUANTITY_TYPES.QUALITATIVE),
       value: recipeIngredientAmountSchema,
     }),
   ]),
@@ -110,15 +88,15 @@ export const recipeIngredientsSchema = v.pipe(
   v.maxLength(100, '材料は100件以内で入力してください'),
 )
 
+export const recipeInstructionSchema = v.pipe(
+  v.string(),
+  v.trim(),
+  v.nonEmpty('手順を入力してください'),
+  v.maxLength(1_000, '手順は1000文字以内で入力してください'),
+)
+
 export const recipeInstructionsSchema = v.pipe(
-  v.array(
-    v.pipe(
-      v.string(),
-      v.trim(),
-      v.nonEmpty('手順を入力してください'),
-      v.maxLength(1_000, '手順は1000文字以内で入力してください'),
-    ),
-  ),
+  v.array(recipeInstructionSchema),
   v.minLength(1, '手順を1件以上入力してください'),
   v.maxLength(50, '手順は50件以内で入力してください'),
 )

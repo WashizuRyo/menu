@@ -18,10 +18,12 @@ export type RecipeIngredientAmount = v.InferOutput<
 export type RecipeIngredientQuantity = v.InferOutput<
   typeof recipeIngredientQuantitySchema
 >
+export type RecipeIngredientQuantityType = RecipeIngredientQuantity['type']
 
 export type RecipeIngredient = v.InferOutput<typeof recipeIngredientSchema>
 
 export type RecipeSource = v.InferOutput<typeof recipeSourceSchema>
+export type RecipeSourceType = RecipeSource['type']
 
 export type Recipe = v.InferOutput<typeof recipeSchema>
 export type CreateRecipeInput = v.InferOutput<typeof createRecipeInputSchema>
