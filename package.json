@@ -10,7 +10,7 @@
     "setup:local": "bun install && bun run --cwd packages/backend db:setup:local",
     "dev": "bun run --filter '*' dev",
     "build": "bun run --cwd packages/frontend build && bun run --cwd packages/backend build",
-    "test": "bun run --cwd packages/backend test",
+    "test": "bun run --cwd packages/backend test && bun run --cwd packages/frontend test",
     "format": "biome check --write .",
     "typecheck": "bun run --filter '*' typecheck",
     "deploy": "bun run --cwd packages/backend deploy",
