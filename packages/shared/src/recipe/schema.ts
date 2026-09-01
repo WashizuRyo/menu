@@ -13,27 +13,33 @@ export const recipeIngredientAmountSchema = v.picklist(
 
 const positiveQuantitySchema = v.pipe(
   v.number(),
-  v.finite('有限の数量を入力してください'),
   v.gtValue(0, '数量は0より大きい値を入力してください'),
+  v.maxValue(10_000, '数量は10000以下を入力してください'),
 )
+
+export const recipeIngredientNumericQuantitySchema = v.strictObject({
+  type: v.literal(RECIPE_INGREDIENT_QUANTITY_TYPES.NUMERIC),
+  value: positiveQuantitySchema,
+  unit: recipeUnitSchema,
+})
+
+export const recipeIngredientRangeQuantitySchema = v.strictObject({
+  type: v.literal(RECIPE_INGREDIENT_QUANTITY_TYPES.RANGE),
+  min: positiveQuantitySchema,
+  max: positiveQuantitySchema,
+  unit: recipeUnitSchema,
+})
+
+export const recipeIngredientQualitativeQuantitySchema = v.strictObject({
+  type: v.literal(RECIPE_INGREDIENT_QUANTITY_TYPES.QUALITATIVE),
+  value: recipeIngredientAmountSchema,
+})
 
 export const recipeIngredientQuantitySchema = v.pipe(
   v.variant('type', [
-    v.strictObject({
-      type: v.literal(RECIPE_INGREDIENT_QUANTITY_TYPES.NUMERIC),
-      value: positiveQuantitySchema,
-      unit: recipeUnitSchema,
-    }),
-    v.strictObject({
-      type: v.literal(RECIPE_INGREDIENT_QUANTITY_TYPES.RANGE),
-      min: positiveQuantitySchema,
-      max: positiveQuantitySchema,
-      unit: recipeUnitSchema,
-    }),
-    v.strictObject({
-      type: v.literal(RECIPE_INGREDIENT_QUANTITY_TYPES.QUALITATIVE),
-      value: recipeIngredientAmountSchema,
-    }),
+    recipeIngredientNumericQuantitySchema,
+    recipeIngredientRangeQuantitySchema,
+    recipeIngredientQualitativeQuantitySchema,
   ]),
   v.forward(
     v.check(

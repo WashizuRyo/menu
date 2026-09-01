@@ -1,4 +1,3 @@
-import type { D1Database } from '@cloudflare/workers-types/index.ts'
 import { sValidator } from '@hono/standard-validator'
 import { createRecipeInputSchema } from '@menu/shared'
 import { drizzle } from 'drizzle-orm/d1'
@@ -6,11 +5,9 @@ import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { HTTPException } from 'hono/http-exception'
 import { recipes } from './db/schema.js'
+import type { Bindings } from './env.js'
 import { toRecipe } from './mapper/recipe.js'
-
-interface Bindings {
-  DB: D1Database
-}
+import youtube from './routes/youtube.js'
 
 const app = new Hono<{ Bindings: Bindings }>()
   .get('/', (context) => {
@@ -22,6 +19,7 @@ const app = new Hono<{ Bindings: Bindings }>()
       timestamp: new Date().toISOString(),
     })
   })
+  .route('/api/youtube', youtube)
   .get('/api/recipes', async (context) => {
     const db = drizzle(context.env.DB)
     const recipeRows = await db

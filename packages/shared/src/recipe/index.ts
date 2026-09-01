@@ -6,7 +6,10 @@ export {
 export {
   createRecipeInputSchema,
   recipeIngredientAmountSchema,
+  recipeIngredientNumericQuantitySchema,
+  recipeIngredientQualitativeQuantitySchema,
   recipeIngredientQuantitySchema,
+  recipeIngredientRangeQuantitySchema,
   recipeIngredientSchema,
   recipeIngredientsSchema,
   recipeInstructionSchema,
