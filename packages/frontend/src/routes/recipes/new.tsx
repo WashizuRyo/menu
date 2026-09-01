@@ -34,6 +34,7 @@ import {
 } from 'react-hook-form'
 import * as v from 'valibot'
 import { createRecipe } from '../../lib/api/recipe'
+import { summarizeYoutube } from '../../lib/api/youtube'
 
 const recipeInstructionFormSchema = v.pipe(
   v.strictObject({
@@ -250,8 +251,12 @@ function NewRecipePage() {
   const {
     control,
     formState: { errors },
+    clearErrors,
     getFieldState,
+    getValues,
     handleSubmit,
+    reset,
+    setError,
   } = useForm({
     defaultValues: {
       name: '',
@@ -279,6 +284,29 @@ function NewRecipePage() {
       await navigate({ to: '/recipes' })
     },
   })
+  const youtubeMutation = useMutation({
+    mutationFn: summarizeYoutube,
+    onSuccess: (summary, youtubeUrl) => {
+      reset({
+        name: summary.name,
+        youtubeUrl,
+        ingredients: summary.ingredients,
+        instructions: summary.instructions.map((value) => ({ value })),
+      })
+    },
+  })
+
+  function summarizeYoutubeVideo() {
+    const result = v.safeParse(recipeYoutubeUrlSchema, getValues('youtubeUrl'))
+
+    if (!result.success) {
+      setError('youtubeUrl', { message: result.issues[0]?.message })
+      return
+    }
+
+    clearErrors('youtubeUrl')
+    youtubeMutation.mutate(result.output)
+  }
 
   return (
     <Layout
@@ -313,6 +341,14 @@ function NewRecipePage() {
                 />
               ) : null}
 
+              {youtubeMutation.isError ? (
+                <Banner
+                  status="error"
+                  title="動画を解析できませんでした"
+                  description={youtubeMutation.error.message}
+                />
+              ) : null}
+
               <Section padding={5}>
                 <FormLayout defaultOptionality="required">
                   <Controller
@@ -343,6 +379,13 @@ function NewRecipePage() {
                         width="100%"
                       />
                     )}
+                  />
+                  <Button
+                    label="動画から入力"
+                    variant="secondary"
+                    type="button"
+                    isLoading={youtubeMutation.isPending}
+                    onClick={summarizeYoutubeVideo}
                   />
                 </FormLayout>
               </Section>
@@ -494,6 +537,7 @@ function NewRecipePage() {
                   label="レシピを保存"
                   variant="primary"
                   type="submit"
+                  isDisabled={youtubeMutation.isPending}
                   isLoading={mutation.isPending}
                 />
               </HStack>

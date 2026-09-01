@@ -8,6 +8,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRecipe, getRecipes } from '../../lib/api/recipe'
+import { summarizeYoutube } from '../../lib/api/youtube'
 import { routeTree } from '../../routeTree.gen'
 
 vi.mock('../../lib/api/recipe', () => ({
@@ -15,8 +16,13 @@ vi.mock('../../lib/api/recipe', () => ({
   getRecipes: vi.fn(),
 }))
 
+vi.mock('../../lib/api/youtube', () => ({
+  summarizeYoutube: vi.fn(),
+}))
+
 const createRecipeMock = vi.mocked(createRecipe)
 const getRecipesMock = vi.mocked(getRecipes)
+const summarizeYoutubeMock = vi.mocked(summarizeYoutube)
 
 function renderPage() {
   const queryClient = new QueryClient({
@@ -40,6 +46,7 @@ function renderPage() {
 describe('新しいレシピ', () => {
   beforeEach(() => {
     createRecipeMock.mockReset()
+    summarizeYoutubeMock.mockReset()
     getRecipesMock.mockResolvedValue({ recipes: [] })
     Object.defineProperty(window, 'scrollTo', {
       configurable: true,
@@ -218,5 +225,125 @@ describe('新しいレシピ', () => {
     ).toBeInTheDocument()
     expect(screen.getByText('通信に失敗しました')).toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/recipes/new')
+  })
+
+  describe('YouTube動画からの入力', () => {
+    it('解析結果で入力済みのレシピ内容を置き換える', async () => {
+      summarizeYoutubeMock.mockResolvedValue({
+        name: '卵かけご飯',
+        ingredients: [
+          {
+            name: '卵',
+            quantity: { type: 'numeric', value: 1, unit: '個' },
+          },
+          {
+            name: '醤油',
+            quantity: { type: 'qualitative', value: '適量' },
+          },
+        ],
+        instructions: ['ご飯に卵を割り入れる', '醤油をかけて混ぜる'],
+      })
+      const user = userEvent.setup()
+      renderPage()
+
+      await user.type(
+        await screen.findByRole('textbox', { name: 'レシピ名' }),
+        '入力済みの料理',
+      )
+      await user.type(
+        screen.getByRole('textbox', { name: 'YouTube URL（任意）' }),
+        'https://youtu.be/example',
+      )
+      await user.type(
+        screen.getByRole('textbox', { name: '材料名' }),
+        '古い材料',
+      )
+      await user.type(
+        screen.getByRole('textbox', { name: '手順 1' }),
+        '古い手順',
+      )
+      await user.click(screen.getByRole('button', { name: '動画から入力' }))
+
+      expect(
+        await screen.findByRole('textbox', { name: 'レシピ名' }),
+      ).toHaveValue('卵かけご飯')
+      expect(screen.getAllByRole('textbox', { name: '材料名' })).toHaveLength(2)
+      expect(
+        screen.getAllByRole('textbox', { name: /^手順 \d+$/ }),
+      ).toHaveLength(2)
+      expect(screen.queryByDisplayValue('古い材料')).not.toBeInTheDocument()
+      expect(screen.queryByDisplayValue('古い手順')).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('textbox', { name: 'YouTube URL（任意）' }),
+      ).toHaveValue('https://youtu.be/example')
+    })
+
+    it('YouTube URLが空ならエラーを表示して動画を解析しない', async () => {
+      const user = userEvent.setup()
+      renderPage()
+
+      await user.click(
+        await screen.findByRole('button', { name: '動画から入力' }),
+      )
+
+      expect(
+        await screen.findByText('YouTube URLを入力してください'),
+      ).toBeInTheDocument()
+      expect(summarizeYoutubeMock).not.toHaveBeenCalled()
+    })
+
+    it('解析に失敗したら理由を表示して入力内容を保持する', async () => {
+      summarizeYoutubeMock.mockRejectedValue(
+        new Error('料理動画ではないためレシピを作成できません'),
+      )
+      const user = userEvent.setup()
+      renderPage()
+
+      await user.type(
+        await screen.findByRole('textbox', { name: 'レシピ名' }),
+        '入力済みの料理',
+      )
+      await user.type(
+        screen.getByRole('textbox', { name: 'YouTube URL（任意）' }),
+        'https://youtu.be/example',
+      )
+      await user.type(
+        screen.getByRole('textbox', { name: '材料名' }),
+        '古い材料',
+      )
+      await user.click(screen.getByRole('button', { name: '動画から入力' }))
+
+      expect(
+        await screen.findByText('動画を解析できませんでした'),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText('料理動画ではないためレシピを作成できません'),
+      ).toBeInTheDocument()
+      expect(screen.getByRole('textbox', { name: 'レシピ名' })).toHaveValue(
+        '入力済みの料理',
+      )
+      expect(screen.getByRole('textbox', { name: '材料名' })).toHaveValue(
+        '古い材料',
+      )
+    })
+
+    it('解析中はレシピを保存できない', async () => {
+      summarizeYoutubeMock.mockImplementation(() => new Promise(() => {}))
+      const user = userEvent.setup()
+      renderPage()
+
+      await user.type(
+        await screen.findByRole('textbox', { name: 'YouTube URL（任意）' }),
+        'https://youtu.be/example',
+      )
+      await user.click(screen.getByRole('button', { name: '動画から入力' }))
+
+      expect(
+        screen.getByRole('button', { name: '動画から入力' }),
+      ).toBeDisabled()
+      expect(
+        screen.getByRole('button', { name: 'レシピを保存' }),
+      ).toBeDisabled()
+    })
   })
 })
