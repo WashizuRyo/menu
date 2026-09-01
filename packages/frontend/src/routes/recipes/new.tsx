@@ -66,6 +66,10 @@ type CreateRecipeFormControl = Control<
   unknown,
   CreateRecipeFormOutput
 >
+interface YoutubeSummaryVariables {
+  youtubeUrl: string
+  formSnapshot: string
+}
 
 const unitOptions = RECIPE_UNITS.map((unit) => ({
   value: unit,
@@ -285,8 +289,13 @@ function NewRecipePage() {
     },
   })
   const youtubeMutation = useMutation({
-    mutationFn: summarizeYoutube,
-    onSuccess: (summary, youtubeUrl) => {
+    mutationFn: ({ youtubeUrl }: YoutubeSummaryVariables) =>
+      summarizeYoutube(youtubeUrl),
+    onSuccess: (summary, { youtubeUrl, formSnapshot }) => {
+      if (JSON.stringify(getValues()) !== formSnapshot) {
+        return
+      }
+
       reset({
         name: summary.name,
         youtubeUrl,
@@ -305,7 +314,10 @@ function NewRecipePage() {
     }
 
     clearErrors('youtubeUrl')
-    youtubeMutation.mutate(result.output)
+    youtubeMutation.mutate({
+      youtubeUrl: result.output,
+      formSnapshot: JSON.stringify(getValues()),
+    })
   }
 
   return (
