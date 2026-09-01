@@ -4,7 +4,7 @@ import {
   createRouter,
   RouterProvider,
 } from '@tanstack/react-router'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRecipe, getRecipes } from '../../lib/api/recipe'
@@ -327,69 +327,36 @@ describe('新しいレシピ', () => {
       )
     })
 
-    it('解析中はレシピを保存できない', async () => {
+    it('解析中はフォームを編集・保存できない', async () => {
       summarizeYoutubeMock.mockImplementation(() => new Promise(() => {}))
-      const user = userEvent.setup()
-      renderPage()
-
-      await user.type(
-        await screen.findByRole('textbox', { name: 'YouTube URL（任意）' }),
-        'https://youtu.be/example',
-      )
-      await user.click(screen.getByRole('button', { name: '動画から入力' }))
-
-      expect(
-        screen.getByRole('button', { name: '動画から入力' }),
-      ).toBeDisabled()
-      expect(
-        screen.getByRole('button', { name: 'レシピを保存' }),
-      ).toBeDisabled()
-    })
-
-    it('解析中にフォームを編集したら古い解析結果を反映しない', async () => {
-      let finishSummarizing = () => {}
-      summarizeYoutubeMock.mockImplementation(
-        () =>
-          new Promise((resolve) => {
-            finishSummarizing = () =>
-              resolve({
-                name: '解析した料理',
-                ingredients: [
-                  {
-                    name: '解析した材料',
-                    quantity: { type: 'numeric', value: 1, unit: '個' },
-                  },
-                ],
-                instructions: ['解析した手順'],
-              })
-          }),
-      )
       const user = userEvent.setup()
       renderPage()
 
       const nameInput = await screen.findByRole('textbox', {
         name: 'レシピ名',
       })
-      const youtubeUrlInput = screen.getByRole('textbox', {
-        name: 'YouTube URL（任意）',
-      })
-      await user.type(nameInput, '入力中の料理')
-      await user.type(youtubeUrlInput, 'https://youtu.be/first')
+      const ingredientInput = screen.getByRole('textbox', { name: '材料名' })
+      const instructionInput = screen.getByRole('textbox', { name: '手順 1' })
+      await user.type(
+        screen.getByRole('textbox', { name: 'YouTube URL（任意）' }),
+        'https://youtu.be/example',
+      )
       await user.click(screen.getByRole('button', { name: '動画から入力' }))
 
-      await user.clear(nameInput)
-      await user.type(nameInput, '後から編集した料理')
-      await user.clear(youtubeUrlInput)
-      await user.type(youtubeUrlInput, 'https://youtu.be/second')
-      finishSummarizing()
-
-      await waitFor(() =>
-        expect(
-          screen.getByRole('button', { name: '動画から入力' }),
-        ).not.toBeDisabled(),
-      )
-      expect(nameInput).toHaveValue('後から編集した料理')
-      expect(youtubeUrlInput).toHaveValue('https://youtu.be/second')
+      expect(nameInput).toBeDisabled()
+      expect(ingredientInput).toBeDisabled()
+      expect(instructionInput).toBeDisabled()
+      expect(
+        screen.getByRole('button', { name: '動画から入力' }),
+      ).toBeDisabled()
+      expect(screen.getByRole('button', { name: '材料を追加' })).toBeDisabled()
+      expect(screen.getByRole('button', { name: '手順を追加' })).toBeDisabled()
+      expect(
+        screen.getByRole('button', { name: 'レシピを保存' }),
+      ).toBeDisabled()
+      expect(
+        screen.getByRole('link', { name: 'キャンセル' }),
+      ).not.toHaveAttribute('aria-disabled', 'true')
     })
   })
 })

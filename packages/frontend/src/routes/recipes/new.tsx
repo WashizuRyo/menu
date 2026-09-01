@@ -66,10 +66,6 @@ type CreateRecipeFormControl = Control<
   unknown,
   CreateRecipeFormOutput
 >
-interface YoutubeSummaryVariables {
-  youtubeUrl: string
-  formSnapshot: string
-}
 
 const unitOptions = RECIPE_UNITS.map((unit) => ({
   value: unit,
@@ -289,13 +285,8 @@ function NewRecipePage() {
     },
   })
   const youtubeMutation = useMutation({
-    mutationFn: ({ youtubeUrl }: YoutubeSummaryVariables) =>
-      summarizeYoutube(youtubeUrl),
-    onSuccess: (summary, { youtubeUrl, formSnapshot }) => {
-      if (JSON.stringify(getValues()) !== formSnapshot) {
-        return
-      }
-
+    mutationFn: summarizeYoutube,
+    onSuccess: (summary, youtubeUrl) => {
       reset({
         name: summary.name,
         youtubeUrl,
@@ -314,10 +305,7 @@ function NewRecipePage() {
     }
 
     clearErrors('youtubeUrl')
-    youtubeMutation.mutate({
-      youtubeUrl: result.output,
-      formSnapshot: JSON.stringify(getValues()),
-    })
+    youtubeMutation.mutate(result.output)
   }
 
   return (
@@ -337,223 +325,235 @@ function NewRecipePage() {
               }),
             )}
           >
-            <VStack gap={6}>
-              <VStack gap={2}>
-                <Heading level={1}>新しいレシピ</Heading>
-                <Text color="secondary">
-                  材料と手順を入力して、献立に使えるレシピを登録します。
-                </Text>
-              </VStack>
+            <fieldset
+              disabled={youtubeMutation.isPending}
+              style={{ border: 0, margin: 0, minWidth: 0, padding: 0 }}
+            >
+              <VStack gap={6}>
+                <VStack gap={2}>
+                  <Heading level={1}>新しいレシピ</Heading>
+                  <Text color="secondary">
+                    材料と手順を入力して、献立に使えるレシピを登録します。
+                  </Text>
+                </VStack>
 
-              {mutation.isError ? (
-                <Banner
-                  status="error"
-                  title="レシピを保存できませんでした"
-                  description={mutation.error.message}
-                />
-              ) : null}
+                {mutation.isError ? (
+                  <Banner
+                    status="error"
+                    title="レシピを保存できませんでした"
+                    description={mutation.error.message}
+                  />
+                ) : null}
 
-              {youtubeMutation.isError ? (
-                <Banner
-                  status="error"
-                  title="動画を解析できませんでした"
-                  description={youtubeMutation.error.message}
-                />
-              ) : null}
+                {youtubeMutation.isError ? (
+                  <Banner
+                    status="error"
+                    title="動画を解析できませんでした"
+                    description={youtubeMutation.error.message}
+                  />
+                ) : null}
 
-              <Section padding={5}>
-                <FormLayout defaultOptionality="required">
-                  <Controller
-                    control={control}
-                    name="name"
-                    render={({ field, fieldState }) => (
-                      <TextInput
-                        label="レシピ名"
-                        value={field.value}
-                        onChange={field.onChange}
-                        status={toAstryxInputStatus(fieldState.error?.message)}
-                        placeholder="例：鶏肉と野菜のカレー"
-                        hasAutoFocus
-                        width="100%"
+                <Section padding={5}>
+                  <FormLayout defaultOptionality="required">
+                    <Controller
+                      control={control}
+                      name="name"
+                      render={({ field, fieldState }) => (
+                        <TextInput
+                          label="レシピ名"
+                          value={field.value}
+                          onChange={field.onChange}
+                          status={toAstryxInputStatus(
+                            fieldState.error?.message,
+                          )}
+                          placeholder="例：鶏肉と野菜のカレー"
+                          hasAutoFocus
+                          width="100%"
+                        />
+                      )}
+                    />
+                    <Controller
+                      control={control}
+                      name="youtubeUrl"
+                      render={({ field, fieldState }) => (
+                        <TextInput
+                          label="YouTube URL（任意）"
+                          value={field.value}
+                          onChange={field.onChange}
+                          status={toAstryxInputStatus(
+                            fieldState.error?.message,
+                          )}
+                          placeholder="例：https://www.youtube.com/watch?v=..."
+                          width="100%"
+                        />
+                      )}
+                    />
+                    <Button
+                      label="動画から入力"
+                      variant="secondary"
+                      type="button"
+                      isLoading={youtubeMutation.isPending}
+                      onClick={summarizeYoutubeVideo}
+                    />
+                  </FormLayout>
+                </Section>
+
+                <Section padding={5}>
+                  <VStack gap={5}>
+                    <VStack gap={1}>
+                      <Heading level={2}>材料</Heading>
+                      <Text color="secondary">
+                        必要な材料と分量を1件ずつ入力してください。
+                      </Text>
+                    </VStack>
+
+                    {ingredients.fields.map((ingredient, index) => {
+                      return (
+                        <Section
+                          key={ingredient.id}
+                          variant="muted"
+                          padding={4}
+                        >
+                          <VStack gap={4}>
+                            <HStack gap={3} hAlign="between" vAlign="center">
+                              <Heading level={3}>材料 {index + 1}</Heading>
+                              <Button
+                                label="この材料を削除"
+                                variant="ghost"
+                                size="sm"
+                                isDisabled={ingredients.fields.length === 1}
+                                onClick={() => ingredients.remove(index)}
+                              />
+                            </HStack>
+
+                            <FormLayout defaultOptionality="required">
+                              <Controller
+                                control={control}
+                                name={`ingredients.${index}.name`}
+                                render={({ field, fieldState }) => (
+                                  <TextInput
+                                    label="材料名"
+                                    value={field.value}
+                                    onChange={field.onChange}
+                                    status={toAstryxInputStatus(
+                                      fieldState.error?.message,
+                                    )}
+                                    placeholder="例：鶏もも肉"
+                                    width="100%"
+                                  />
+                                )}
+                              />
+
+                              <IngredientQuantityControls
+                                control={control}
+                                getFieldState={getFieldState}
+                                index={index}
+                              />
+                            </FormLayout>
+                          </VStack>
+                        </Section>
+                      )
+                    })}
+
+                    {errors.ingredients?.root?.message ? (
+                      <Banner
+                        status="error"
+                        title={errors.ingredients.root.message}
                       />
-                    )}
-                  />
-                  <Controller
-                    control={control}
-                    name="youtubeUrl"
-                    render={({ field, fieldState }) => (
-                      <TextInput
-                        label="YouTube URL（任意）"
-                        value={field.value}
-                        onChange={field.onChange}
-                        status={toAstryxInputStatus(fieldState.error?.message)}
-                        placeholder="例：https://www.youtube.com/watch?v=..."
-                        width="100%"
-                      />
-                    )}
-                  />
-                  <Button
-                    label="動画から入力"
-                    variant="secondary"
-                    type="button"
-                    isLoading={youtubeMutation.isPending}
-                    onClick={summarizeYoutubeVideo}
-                  />
-                </FormLayout>
-              </Section>
+                    ) : null}
 
-              <Section padding={5}>
-                <VStack gap={5}>
-                  <VStack gap={1}>
-                    <Heading level={2}>材料</Heading>
-                    <Text color="secondary">
-                      必要な材料と分量を1件ずつ入力してください。
-                    </Text>
+                    <Button
+                      label="材料を追加"
+                      variant="secondary"
+                      onClick={() =>
+                        ingredients.append({
+                          name: '',
+                          quantity: {
+                            type: 'numeric',
+                            value: 1,
+                            unit: 'g',
+                          },
+                        })
+                      }
+                    />
                   </VStack>
+                </Section>
 
-                  {ingredients.fields.map((ingredient, index) => {
-                    return (
-                      <Section key={ingredient.id} variant="muted" padding={4}>
-                        <VStack gap={4}>
+                <Section padding={5}>
+                  <VStack gap={5}>
+                    <VStack gap={1}>
+                      <Heading level={2}>作り方</Heading>
+                      <Text color="secondary">
+                        調理する順番に手順を入力してください。
+                      </Text>
+                    </VStack>
+
+                    {instructions.fields.map((instruction, index) => (
+                      <Section key={instruction.id} variant="muted" padding={4}>
+                        <VStack gap={3}>
                           <HStack gap={3} hAlign="between" vAlign="center">
-                            <Heading level={3}>材料 {index + 1}</Heading>
+                            <Heading level={3}>手順 {index + 1}</Heading>
                             <Button
-                              label="この材料を削除"
+                              label="この手順を削除"
                               variant="ghost"
                               size="sm"
-                              isDisabled={ingredients.fields.length === 1}
-                              onClick={() => ingredients.remove(index)}
+                              isDisabled={instructions.fields.length === 1}
+                              onClick={() => instructions.remove(index)}
                             />
                           </HStack>
-
-                          <FormLayout defaultOptionality="required">
-                            <Controller
-                              control={control}
-                              name={`ingredients.${index}.name`}
-                              render={({ field, fieldState }) => (
-                                <TextInput
-                                  label="材料名"
-                                  value={field.value}
-                                  onChange={field.onChange}
-                                  status={toAstryxInputStatus(
-                                    fieldState.error?.message,
-                                  )}
-                                  placeholder="例：鶏もも肉"
-                                  width="100%"
-                                />
-                              )}
-                            />
-
-                            <IngredientQuantityControls
-                              control={control}
-                              getFieldState={getFieldState}
-                              index={index}
-                            />
-                          </FormLayout>
+                          <Controller
+                            control={control}
+                            name={`instructions.${index}.value`}
+                            render={({ field, fieldState }) => (
+                              <TextArea
+                                label={`手順 ${index + 1}`}
+                                isLabelHidden
+                                value={field.value}
+                                onChange={field.onChange}
+                                status={toAstryxInputStatus(
+                                  fieldState.error?.message,
+                                )}
+                                placeholder="例：玉ねぎを薄切りにして、弱火で炒めます"
+                                rows={3}
+                                maxLength={1_000}
+                                width="100%"
+                              />
+                            )}
+                          />
                         </VStack>
                       </Section>
-                    )
-                  })}
+                    ))}
 
-                  {errors.ingredients?.root?.message ? (
-                    <Banner
-                      status="error"
-                      title={errors.ingredients.root.message}
+                    {errors.instructions?.root?.message ? (
+                      <Banner
+                        status="error"
+                        title={errors.instructions.root.message}
+                      />
+                    ) : null}
+
+                    <Button
+                      label="手順を追加"
+                      variant="secondary"
+                      onClick={() => instructions.append({ value: '' })}
                     />
-                  ) : null}
-
-                  <Button
-                    label="材料を追加"
-                    variant="secondary"
-                    onClick={() =>
-                      ingredients.append({
-                        name: '',
-                        quantity: {
-                          type: 'numeric',
-                          value: 1,
-                          unit: 'g',
-                        },
-                      })
-                    }
-                  />
-                </VStack>
-              </Section>
-
-              <Section padding={5}>
-                <VStack gap={5}>
-                  <VStack gap={1}>
-                    <Heading level={2}>作り方</Heading>
-                    <Text color="secondary">
-                      調理する順番に手順を入力してください。
-                    </Text>
                   </VStack>
+                </Section>
 
-                  {instructions.fields.map((instruction, index) => (
-                    <Section key={instruction.id} variant="muted" padding={4}>
-                      <VStack gap={3}>
-                        <HStack gap={3} hAlign="between" vAlign="center">
-                          <Heading level={3}>手順 {index + 1}</Heading>
-                          <Button
-                            label="この手順を削除"
-                            variant="ghost"
-                            size="sm"
-                            isDisabled={instructions.fields.length === 1}
-                            onClick={() => instructions.remove(index)}
-                          />
-                        </HStack>
-                        <Controller
-                          control={control}
-                          name={`instructions.${index}.value`}
-                          render={({ field, fieldState }) => (
-                            <TextArea
-                              label={`手順 ${index + 1}`}
-                              isLabelHidden
-                              value={field.value}
-                              onChange={field.onChange}
-                              status={toAstryxInputStatus(
-                                fieldState.error?.message,
-                              )}
-                              placeholder="例：玉ねぎを薄切りにして、弱火で炒めます"
-                              rows={3}
-                              maxLength={1_000}
-                              width="100%"
-                            />
-                          )}
-                        />
-                      </VStack>
-                    </Section>
-                  ))}
-
-                  {errors.instructions?.root?.message ? (
-                    <Banner
-                      status="error"
-                      title={errors.instructions.root.message}
-                    />
-                  ) : null}
-
+                <HStack gap={3} hAlign="end" wrap="wrap">
                   <Button
-                    label="手順を追加"
+                    label="キャンセル"
                     variant="secondary"
-                    onClick={() => instructions.append({ value: '' })}
+                    href="/recipes"
                   />
-                </VStack>
-              </Section>
-
-              <HStack gap={3} hAlign="end" wrap="wrap">
-                <Button
-                  label="キャンセル"
-                  variant="secondary"
-                  href="/recipes"
-                />
-                <Button
-                  label="レシピを保存"
-                  variant="primary"
-                  type="submit"
-                  isDisabled={youtubeMutation.isPending}
-                  isLoading={mutation.isPending}
-                />
-              </HStack>
-            </VStack>
+                  <Button
+                    label="レシピを保存"
+                    variant="primary"
+                    type="submit"
+                    isLoading={mutation.isPending}
+                  />
+                </HStack>
+              </VStack>
+            </fieldset>
           </form>
         </LayoutContent>
       }
