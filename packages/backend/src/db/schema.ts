@@ -1,6 +1,12 @@
 import type { RecipeIngredient, RecipeSource } from '@menu/shared'
 import { sql } from 'drizzle-orm'
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import {
+  index,
+  integer,
+  primaryKey,
+  sqliteTable,
+  text,
+} from 'drizzle-orm/sqlite-core'
 
 export const recipes = sqliteTable('recipes', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -19,3 +25,40 @@ export const recipes = sqliteTable('recipes', {
     .default(sql`(unixepoch())`)
     .notNull(),
 })
+
+export const mealPlans = sqliteTable('meal_plans', {
+  id: text('id').primaryKey(),
+  startDate: text('start_date').notNull(),
+  endDate: text('end_date').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .default(sql`(unixepoch())`)
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .default(sql`(unixepoch())`)
+    .notNull(),
+})
+
+export const mealPlanRecipes = sqliteTable(
+  'meal_plan_recipes',
+  {
+    mealPlanId: text('meal_plan_id')
+      .notNull()
+      .references(() => mealPlans.id, { onDelete: 'cascade' }),
+    mealDate: text('meal_date').notNull(),
+    mealType: text('meal_type').notNull(),
+    recipeId: integer('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'restrict' }),
+  },
+  (table) => [
+    primaryKey({
+      columns: [
+        table.mealPlanId,
+        table.mealDate,
+        table.mealType,
+        table.recipeId,
+      ],
+    }),
+    index('meal_plan_recipes_recipe_id_index').on(table.recipeId),
+  ],
+)
