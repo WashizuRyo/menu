@@ -1,4 +1,9 @@
-import type { RecipeIngredient, RecipeSource } from '@menu/shared'
+import type {
+  MealPlanDate,
+  MealType,
+  RecipeIngredient,
+  RecipeSource,
+} from '@menu/shared'
 import { sql } from 'drizzle-orm'
 import {
   index,
@@ -28,8 +33,8 @@ export const recipes = sqliteTable('recipes', {
 
 export const mealPlans = sqliteTable('meal_plans', {
   id: text('id').primaryKey(),
-  startDate: text('start_date').notNull(),
-  endDate: text('end_date').notNull(),
+  startDate: text('start_date').$type<MealPlanDate>().notNull(),
+  endDate: text('end_date').$type<MealPlanDate>().notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .default(sql`(unixepoch())`)
     .notNull(),
@@ -44,8 +49,8 @@ export const mealPlanRecipes = sqliteTable(
     mealPlanId: text('meal_plan_id')
       .notNull()
       .references(() => mealPlans.id, { onDelete: 'cascade' }),
-    mealDate: text('meal_date').notNull(),
-    mealType: text('meal_type').notNull(),
+    mealDate: text('meal_date').$type<MealPlanDate>().notNull(),
+    mealType: text('meal_type').$type<MealType>().notNull(),
     recipeId: integer('recipe_id')
       .notNull()
       .references(() => recipes.id, { onDelete: 'restrict' }),
