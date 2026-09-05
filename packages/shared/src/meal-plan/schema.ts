@@ -1,5 +1,10 @@
 import * as v from 'valibot'
+import { createIdGenerator } from '../id.js'
+import { RecipeId } from '../recipe/schema.js'
 import { MEAL_TYPES } from './constants.js'
+
+export const MealPlanId = createIdGenerator('mpln')
+export type MealPlanId = v.InferOutput<typeof MealPlanId.schema>
 
 const isValidCalendarDate = (value: string): boolean => {
   // Dateは存在しない日付を自動補正するため、変換後の日付と元の値を比較する。
@@ -19,12 +24,6 @@ export const mealPlanDateSchema = v.pipe(
 
 export const mealTypeSchema = v.picklist(MEAL_TYPES)
 
-const recipeIdSchema = v.pipe(
-  v.number(),
-  v.safeInteger('レシピIDは整数を入力してください'),
-  v.minValue(1, 'レシピIDは1以上を入力してください'),
-)
-
 export const createMealPlanInputSchema = v.pipe(
   v.strictObject({
     startDate: mealPlanDateSchema,
@@ -33,7 +32,7 @@ export const createMealPlanInputSchema = v.pipe(
       v.strictObject({
         mealDate: mealPlanDateSchema,
         mealType: mealTypeSchema,
-        recipeId: recipeIdSchema,
+        recipeId: RecipeId.schema,
       }),
     ),
   }),
@@ -69,14 +68,14 @@ export const createMealPlanInputSchema = v.pipe(
 
 export const mealPlanSchema = v.pipe(
   v.strictObject({
-    id: v.string(),
+    id: MealPlanId.schema,
     startDate: mealPlanDateSchema,
     endDate: mealPlanDateSchema,
     recipes: v.array(
       v.strictObject({
         mealDate: mealPlanDateSchema,
         mealType: mealTypeSchema,
-        recipeId: recipeIdSchema,
+        recipeId: RecipeId.schema,
       }),
     ),
     createdAt: v.pipe(v.string(), v.isoTimestamp()),
