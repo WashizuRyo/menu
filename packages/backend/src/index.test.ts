@@ -178,3 +178,195 @@ describe('POST /api/recipes', () => {
     expect(await response.json()).toEqual({ error: 'Invalid JSON' })
   })
 })
+
+describe('POST /api/meal-plans', () => {
+  test('献立を作成して返す', async () => {
+    const recipeId = RecipeId.generate()
+    const env = await worker.getEnv()
+    await env.DB.prepare(
+      `INSERT INTO recipes (
+        id,
+        name,
+        ingredients,
+        instructions,
+        source
+      ) VALUES (?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        recipeId,
+        '味噌汁',
+        JSON.stringify([
+          { name: '豆腐', quantity: { type: 'numeric', value: 1, unit: '丁' } },
+        ]),
+        JSON.stringify(['だしを沸かす', '豆腐と味噌を加える']),
+        JSON.stringify({ type: 'manual' }),
+      )
+      .run()
+
+    const response = await server.fetch('/api/meal-plans', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        startDate: '2026-09-07',
+        endDate: '2026-09-13',
+        recipes: [
+          {
+            mealDate: '2026-09-07',
+            mealType: 'dinner',
+            recipeId,
+          },
+        ],
+      }),
+    })
+
+    expect(response.status).toBe(201)
+    expect(await response.json()).toEqual({
+      mealPlan: {
+        id: expect.stringMatching(/^mpln_[0-9A-Za-z]{16}$/),
+        startDate: '2026-09-07',
+        endDate: '2026-09-13',
+        recipes: [
+          {
+            mealDate: '2026-09-07',
+            mealType: 'dinner',
+            recipeId,
+          },
+        ],
+        createdAt: expect.any(String),
+        updatedAt: expect.any(String),
+      },
+    })
+  })
+
+  test('レシピが未割り当てでも献立を作成できる', async () => {
+    const response = await server.fetch('/api/meal-plans', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        startDate: '2026-09-07',
+        endDate: '2026-09-13',
+        recipes: [],
+      }),
+    })
+
+    expect(response.status).toBe(201)
+    expect(await response.json()).toEqual({
+      mealPlan: {
+        id: expect.stringMatching(/^mpln_[0-9A-Za-z]{16}$/),
+        startDate: '2026-09-07',
+        endDate: '2026-09-13',
+        recipes: [],
+        createdAt: expect.any(String),
+        updatedAt: expect.any(String),
+      },
+    })
+  })
+
+  test('存在しないレシピは割り当てられない', async () => {
+    const response = await server.fetch('/api/meal-plans', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        startDate: '2026-09-07',
+        endDate: '2026-09-13',
+        recipes: [
+          {
+            mealDate: '2026-09-07',
+            mealType: 'dinner',
+            recipeId: RecipeId.generate(),
+          },
+        ],
+      }),
+    })
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ error: 'validation failed' })
+  })
+
+  test('献立期間外の日付にはレシピを割り当てられない', async () => {
+    const recipeId = RecipeId.generate()
+    const env = await worker.getEnv()
+    await env.DB.prepare(
+      `INSERT INTO recipes (
+        id,
+        name,
+        ingredients,
+        instructions,
+        source
+      ) VALUES (?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        recipeId,
+        '味噌汁',
+        JSON.stringify([
+          { name: '豆腐', quantity: { type: 'numeric', value: 1, unit: '丁' } },
+        ]),
+        JSON.stringify(['だしを沸かす', '豆腐と味噌を加える']),
+        JSON.stringify({ type: 'manual' }),
+      )
+      .run()
+
+    const response = await server.fetch('/api/meal-plans', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        startDate: '2026-09-07',
+        endDate: '2026-09-13',
+        recipes: [
+          {
+            mealDate: '2026-09-14',
+            mealType: 'dinner',
+            recipeId,
+          },
+        ],
+      }),
+    })
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ error: 'validation failed' })
+  })
+
+  test('リクエストボディが256 KiBを超える場合は413を返す', async () => {
+    const response = await server.fetch('/api/meal-plans', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        startDate: 'a'.repeat(256 * 1024),
+        endDate: '2026-09-13',
+        recipes: [],
+      }),
+    })
+
+    expect(response.status).toBe(413)
+    expect(await response.json()).toEqual({ error: 'request too large' })
+  })
+
+  test('不正なJSONの場合は400を返す', async () => {
+    const response = await server.fetch('/api/meal-plans', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{',
+    })
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ error: 'Invalid JSON' })
+  })
+
+  test('献立の保存に失敗した場合は500を返す', async () => {
+    const env = await worker.getEnv()
+    await env.DB.exec('DROP TABLE meal_plan_recipes')
+
+    const response = await server.fetch('/api/meal-plans', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        startDate: '2026-09-07',
+        endDate: '2026-09-13',
+        recipes: [],
+      }),
+    })
+
+    expect(response.status).toBe(500)
+    expect(await response.json()).toEqual({ error: 'Internal Server Error' })
+  })
+})
