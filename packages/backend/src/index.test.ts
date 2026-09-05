@@ -1,4 +1,4 @@
-import type { CreateRecipeInput, Recipe } from '@menu/shared'
+import { type CreateRecipeInput, type Recipe, RecipeId } from '@menu/shared'
 import {
   afterAll,
   afterEach,
@@ -35,6 +35,7 @@ afterAll(async () => {
 
 describe('GET /api/recipes', () => {
   test('登録されているレシピを返す', async () => {
+    const id = RecipeId.generate()
     const env = await worker.getEnv()
     await env.DB.prepare(
       `INSERT INTO recipes (
@@ -48,7 +49,7 @@ describe('GET /api/recipes', () => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
     )
       .bind(
-        'rcp_0000000000000001',
+        id,
         '味噌汁',
         JSON.stringify([
           { name: '豆腐', quantity: { type: 'numeric', value: 1, unit: '丁' } },
@@ -67,7 +68,7 @@ describe('GET /api/recipes', () => {
     expect(body).toEqual({
       recipes: [
         {
-          id: 'rcp_0000000000000001',
+          id,
           name: '味噌汁',
           ingredients: [
             {

@@ -5,8 +5,6 @@ const ID_ALPHABET =
   '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
 const ID_LENGTH = 16
 
-export type PrefixedId<Prefix extends string> = `${Prefix}_${string}`
-
 export const createIdGenerator = <const Prefix extends string>(
   prefix: Prefix,
 ) => {
@@ -17,13 +15,13 @@ export const createIdGenerator = <const Prefix extends string>(
       new RegExp(`^${prefix}_[0-9A-Za-z]{${ID_LENGTH}}$`),
       `${prefix}_から始まる正しいIDを入力してください`,
     ),
-    v.transform((value) => value as PrefixedId<Prefix>),
+    v.brand(prefix),
   )
 
   return {
     schema,
-    generate: (): PrefixedId<Prefix> => `${prefix}_${generateRandomPart()}`,
-    parse: (input: unknown): PrefixedId<Prefix> => v.parse(schema, input),
+    generate: () => v.parse(schema, `${prefix}_${generateRandomPart()}`),
+    parse: (input: unknown) => v.parse(schema, input),
     safeParse: (input: unknown) => v.safeParse(schema, input),
   } as const
 }
