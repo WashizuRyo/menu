@@ -61,7 +61,7 @@ describe('新しいレシピ', () => {
   it('入力したレシピを保存して一覧へ戻る', async () => {
     createRecipeMock.mockResolvedValue({
       recipe: {
-        id: 1,
+        id: 'rcp_0000000000000001',
         name: '肉じゃが',
         ingredients: [
           {
@@ -122,7 +122,7 @@ describe('新しいレシピ', () => {
   it('YouTube URLを入力するとレシピのソースとして保存する', async () => {
     createRecipeMock.mockResolvedValue({
       recipe: {
-        id: 1,
+        id: 'rcp_0000000000000001',
         name: '肉じゃが',
         ingredients: [
           {
@@ -165,7 +165,7 @@ describe('新しいレシピ', () => {
   it('YouTube URLを空にするとレシピのソースがmanualとして保存する', async () => {
     createRecipeMock.mockResolvedValue({
       recipe: {
-        id: 1,
+        id: 'rcp_0000000000000001',
         name: '肉じゃが',
         ingredients: [
           {

@@ -4,7 +4,7 @@ import { recipes } from './schema.js'
 
 const devRecipes = [
   {
-    id: 1,
+    id: 'rcp_0000000000000001',
     name: '豚の生姜焼き',
     ingredients: [
       {
@@ -36,7 +36,7 @@ const devRecipes = [
     source: { type: 'manual' },
   },
   {
-    id: 2,
+    id: 'rcp_0000000000000002',
     name: 'じゃがいもと玉ねぎの味噌汁',
     ingredients: [
       {
@@ -68,7 +68,7 @@ const devRecipes = [
     source: { type: 'manual' },
   },
   {
-    id: 3,
+    id: 'rcp_0000000000000003',
     name: '鮭ときのこのホイル焼き',
     ingredients: [
       {
@@ -100,7 +100,7 @@ const devRecipes = [
     source: { type: 'manual' },
   },
   {
-    id: 4,
+    id: 'rcp_0000000000000004',
     name: 'ふわふわフレンチトースト',
     ingredients: [
       {

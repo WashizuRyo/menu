@@ -1,6 +1,7 @@
 export { DEFAULT_MEAL_TYPE, MEAL_TYPES } from './constants.js'
 export {
   createMealPlanInputSchema,
+  MealPlanId,
   mealPlanDateSchema,
   mealPlanSchema,
   mealTypeSchema,

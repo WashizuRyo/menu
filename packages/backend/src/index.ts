@@ -1,5 +1,5 @@
 import { sValidator } from '@hono/standard-validator'
-import { createRecipeInputSchema } from '@menu/shared'
+import { createRecipeInputSchema, RecipeId } from '@menu/shared'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
@@ -48,7 +48,10 @@ const app = new Hono<{ Bindings: Bindings }>()
     async (context) => {
       const db = drizzle(context.env.DB)
       const input = context.req.valid('json')
-      const [recipeRow] = await db.insert(recipes).values(input).returning()
+      const [recipeRow] = await db
+        .insert(recipes)
+        .values({ ...input, id: RecipeId.generate() })
+        .returning()
 
       if (!recipeRow) {
         throw new Error('Failed to create recipe')
