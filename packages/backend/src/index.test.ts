@@ -284,6 +284,28 @@ describe('POST /api/meal-plans', () => {
   })
 
   test('献立期間外の日付にはレシピを割り当てられない', async () => {
+    const recipeId = RecipeId.generate()
+    const env = await worker.getEnv()
+    await env.DB.prepare(
+      `INSERT INTO recipes (
+        id,
+        name,
+        ingredients,
+        instructions,
+        source
+      ) VALUES (?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        recipeId,
+        '味噌汁',
+        JSON.stringify([
+          { name: '豆腐', quantity: { type: 'numeric', value: 1, unit: '丁' } },
+        ]),
+        JSON.stringify(['だしを沸かす', '豆腐と味噌を加える']),
+        JSON.stringify({ type: 'manual' }),
+      )
+      .run()
+
     const response = await server.fetch('/api/meal-plans', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -294,7 +316,7 @@ describe('POST /api/meal-plans', () => {
           {
             mealDate: '2026-09-14',
             mealType: 'dinner',
-            recipeId: RecipeId.generate(),
+            recipeId,
           },
         ],
       }),
