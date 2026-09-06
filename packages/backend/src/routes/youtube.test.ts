@@ -38,7 +38,7 @@ describe('POST /api/youtube/summarize', () => {
 
     expect(response.status).toBe(503)
     expect(await response.json()).toEqual({
-      error: 'Gemini API key is not configured',
+      error: 'YouTubeの要約サービスを利用できません',
     })
   })
 
@@ -82,6 +82,61 @@ describe('POST /api/youtube/summarize', () => {
     expect(response.status).toBe(422)
     expect(await response.json()).toEqual({
       error: '料理動画ではないためレシピを作成できません',
+    })
+  })
+
+  test('YouTube要約に失敗した場合は502を返す', async () => {
+    generateTextMock.mockRejectedValueOnce(new Error('Gemini unavailable'))
+
+    const response = await app.request(
+      '/summarize',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: 'https://www.youtube.com/watch?v=test' }),
+      },
+      { GEMINI_API_KEY: 'test-api-key' },
+    )
+
+    expect(response.status).toBe(502)
+    expect(await response.json()).toEqual({
+      error: 'YouTubeの要約に失敗しました',
+    })
+  })
+
+  test('Geminiの変換不能な要約結果には502を返す', async () => {
+    generateTextMock.mockResolvedValueOnce({
+      output: {
+        isRecipeVideo: true,
+        title: '卵かけご飯',
+        ingredients: [
+          {
+            name: '卵',
+            quantity: {
+              // numericとrangeが同時に指定されており、数量形式は1つだけというGemini応答契約に違反している。
+              numeric: { type: 'numeric', value: 1, unit: '個' },
+              range: { type: 'range', min: 1, max: 2, unit: '個' },
+              qualitative: null,
+            },
+          },
+        ],
+        instructions: ['ご飯に卵を割り入れる'],
+      } satisfies YoutubeSummary,
+    } as Awaited<ReturnType<typeof generateText>>)
+
+    const response = await app.request(
+      '/summarize',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: 'https://www.youtube.com/watch?v=test' }),
+      },
+      { GEMINI_API_KEY: 'test-api-key' },
+    )
+
+    expect(response.status).toBe(502)
+    expect(await response.json()).toEqual({
+      error: 'YouTubeの要約に失敗しました',
     })
   })
 

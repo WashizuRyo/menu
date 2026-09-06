@@ -3,9 +3,10 @@ import { createRecipeInputSchema } from '@menu/shared'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
-import { HTTPException } from 'hono/http-exception'
 import { recipes } from './db/schema.js'
 import type { Bindings } from './env.js'
+import { PayloadTooLargeError, ValidationError } from './lib/api-error.js'
+import { onApiError } from './lib/error-handler.js'
 import { toRecipe } from './mapper/recipe.js'
 import youtube from './routes/youtube.js'
 
@@ -38,11 +39,13 @@ const app = new Hono<{ Bindings: Bindings }>()
     '/api/recipes',
     bodyLimit({
       maxSize: 256 * 1024,
-      onError: (context) => context.json({ error: 'request too large' }, 413),
+      onError: () => {
+        throw new PayloadTooLargeError('request too large')
+      },
     }),
-    sValidator('json', createRecipeInputSchema, (result, context) => {
+    sValidator('json', createRecipeInputSchema, (result) => {
       if (!result.success) {
-        return context.json({ error: 'validation failed' }, 400)
+        throw new ValidationError('validation failed')
       }
     }),
     async (context) => {
@@ -57,25 +60,7 @@ const app = new Hono<{ Bindings: Bindings }>()
       return context.json({ recipe: toRecipe(recipeRow) }, 201)
     },
   )
-
-app.onError((error, context) => {
-  if (
-    error instanceof HTTPException &&
-    error.status === 400 &&
-    error.message === 'Malformed JSON in request body'
-  ) {
-    return context.json({ error: 'Invalid JSON' }, 400)
-  }
-
-  console.error(
-    JSON.stringify({
-      message: 'Unhandled request error',
-      error: error.message,
-    }),
-  )
-
-  return context.json({ error: 'Internal Server Error' }, 500)
-})
+  .onError(onApiError)
 
 export default app
 

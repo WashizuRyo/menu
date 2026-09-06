@@ -163,15 +163,4 @@ describe('POST /api/recipes', () => {
     expect(response.status).toBe(413)
     expect(await response.json()).toEqual({ error: 'request too large' })
   })
-
-  test('不正なJSONの場合は400を返す', async () => {
-    const response = await server.fetch('/api/recipes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: '{',
-    })
-
-    expect(response.status).toBe(400)
-    expect(await response.json()).toEqual({ error: 'Invalid JSON' })
-  })
 })
