@@ -5,6 +5,7 @@ export {
 } from './constants.js'
 export {
   createRecipeInputSchema,
+  RecipeId,
   recipeIngredientAmountSchema,
   recipeIngredientNumericQuantitySchema,
   recipeIngredientQualitativeQuantitySchema,

@@ -1,3 +1,4 @@
+import { RecipeId } from '@menu/shared'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
   createMemoryHistory,
@@ -61,7 +62,7 @@ describe('新しいレシピ', () => {
   it('入力したレシピを保存して一覧へ戻る', async () => {
     createRecipeMock.mockResolvedValue({
       recipe: {
-        id: 1,
+        id: RecipeId.generate(),
         name: '肉じゃが',
         ingredients: [
           {
@@ -122,7 +123,7 @@ describe('新しいレシピ', () => {
   it('YouTube URLを入力するとレシピのソースとして保存する', async () => {
     createRecipeMock.mockResolvedValue({
       recipe: {
-        id: 1,
+        id: RecipeId.generate(),
         name: '肉じゃが',
         ingredients: [
           {
@@ -165,7 +166,7 @@ describe('新しいレシピ', () => {
   it('YouTube URLを空にするとレシピのソースがmanualとして保存する', async () => {
     createRecipeMock.mockResolvedValue({
       recipe: {
-        id: 1,
+        id: RecipeId.generate(),
         name: '肉じゃが',
         ingredients: [
           {

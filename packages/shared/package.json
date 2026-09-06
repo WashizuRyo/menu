@@ -10,6 +10,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "nanoid": "5.1.16",
     "valibot": "1.4.2"
   },
   "devDependencies": {

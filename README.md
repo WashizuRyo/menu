@@ -25,7 +25,13 @@ bun run setup:local
 bun run dev
 ```
 
-`setup:local` は依存関係のインストール後、ローカルD1にマイグレーションとseedを適用します。Zedから新しいworktreeを作成した場合は自動実行されます。Zed以外でworktreeを作成した場合は、このコマンドを1度実行してください。
+`setup:local` は依存関係のインストール後、ローカルD1にマイグレーションとseedを適用し、FrontendとBackendをビルドします。Zedから新しいworktreeを作成した場合は自動実行されます。Zed以外でworktreeを作成した場合は、このコマンドを1度実行してください。
+
+ローカル開発用の環境変数は、primary worktreeの`packages/backend/.dev.vars`に配置してください。追加worktreeからもこのファイルを共有して読み込むため、worktreeごとのコピーは不要です。このファイルはGitの管理対象外です。
+
+```dotenv
+GEMINI_API_KEY=your-api-key
+```
 
 - Frontend: http://localhost:5173
 - Backend: http://localhost:3000

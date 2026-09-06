@@ -1,9 +1,13 @@
 import * as v from 'valibot'
+import { createIdGenerator } from '../id.js'
 import {
   RECIPE_INGREDIENT_AMOUNTS,
   RECIPE_INGREDIENT_QUANTITY_TYPES,
   RECIPE_UNITS,
 } from './constants.js'
+
+export const RecipeId = createIdGenerator('rcp')
+export type RecipeId = v.InferOutput<typeof RecipeId.schema>
 
 export const recipeUnitSchema = v.picklist(RECIPE_UNITS)
 
@@ -110,7 +114,7 @@ export const recipeInstructionsSchema = v.pipe(
 )
 
 export const recipeSchema = v.strictObject({
-  id: v.number(),
+  id: RecipeId.schema,
   name: recipeNameSchema,
   ingredients: recipeIngredientsSchema,
   instructions: recipeInstructionsSchema,
