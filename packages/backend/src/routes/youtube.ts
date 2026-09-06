@@ -15,6 +15,14 @@ import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import * as v from 'valibot'
 import type { Bindings } from '../env.js'
+import {
+  BadGatewayError,
+  PayloadTooLargeError,
+  ServiceUnavailableError,
+  UnprocessableEntityError,
+  ValidationError,
+} from '../lib/api-error.js'
+import { onApiError } from '../lib/error-handler.js'
 
 const youtubeSummaryInputSchema = v.strictObject({
   url: recipeYoutubeUrlSchema,
@@ -82,78 +90,99 @@ function toRecipeIngredientQuantity(
   return values[0]
 }
 
-const app = new Hono<{ Bindings: Bindings }>().post(
-  '/summarize',
-  bodyLimit({
-    maxSize: 16 * 1024,
-    onError: (context) => context.json({ error: 'request too large' }, 413),
-  }),
-  sValidator('json', youtubeSummaryInputSchema, (result, context) => {
-    if (!result.success) {
-      return context.json({ error: 'validation failed' }, 400)
-    }
-  }),
-  async (context) => {
-    if (!context.env.GEMINI_API_KEY) {
-      return context.json({ error: 'Gemini API key is not configured' }, 503)
-    }
-
-    const { url } = context.req.valid('json')
-
-    try {
-      const googleProvider = createGoogleGenerativeAI({
-        apiKey: context.env.GEMINI_API_KEY,
-      })
-      const { output } = await generateText({
-        model: googleProvider('gemini-3.5-flash-lite'),
-        output: Output.object({
-          schema: valibotSchema(youtubeSummarySchema),
-        }),
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: 'このYouTube動画から料理情報を抽出し、日本語でレシピ化してください。',
-              },
-              {
-                type: 'file',
-                data: url,
-                mediaType: 'video/mp4',
-              },
-            ],
-          },
-        ],
-      })
-
-      if (!output.isRecipeVideo) {
-        return context.json(
-          { error: '料理動画ではないためレシピを作成できません' },
-          422,
+const app = new Hono<{ Bindings: Bindings }>()
+  .post(
+    '/summarize',
+    bodyLimit({
+      maxSize: 16 * 1024,
+      onError: () => {
+        throw new PayloadTooLargeError('request too large')
+      },
+    }),
+    sValidator('json', youtubeSummaryInputSchema, (result) => {
+      if (!result.success) {
+        throw new ValidationError('validation failed')
+      }
+    }),
+    async (context) => {
+      if (!context.env.GEMINI_API_KEY) {
+        console.error(
+          JSON.stringify({ message: 'Gemini API key is not configured' }),
+        )
+        throw new ServiceUnavailableError(
+          'YouTubeの要約サービスを利用できません',
         )
       }
 
-      return context.json(
-        v.parse(youtubeSummaryResponseSchema, {
-          name: output.title,
-          ingredients: output.ingredients.map(({ name, quantity }) => ({
-            name,
-            quantity: toRecipeIngredientQuantity(quantity),
-          })),
-          instructions: output.instructions,
-        }),
-      )
-    } catch (error) {
-      console.error(
-        JSON.stringify({
-          message: 'Gemini YouTube summarization failed',
-          error: error instanceof Error ? error.message : String(error),
-        }),
-      )
-      return context.json({ error: 'YouTubeの要約に失敗しました' }, 502)
-    }
-  },
-)
+      const { url } = context.req.valid('json')
+
+      let output: YoutubeSummary
+
+      try {
+        const googleProvider = createGoogleGenerativeAI({
+          apiKey: context.env.GEMINI_API_KEY,
+        })
+        const result = await generateText({
+          model: googleProvider('gemini-3.5-flash-lite'),
+          output: Output.object({
+            schema: valibotSchema(youtubeSummarySchema),
+          }),
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: 'このYouTube動画から料理情報を抽出し、日本語でレシピ化してください。',
+                },
+                {
+                  type: 'file',
+                  data: url,
+                  mediaType: 'video/mp4',
+                },
+              ],
+            },
+          ],
+        })
+        output = result.output
+      } catch (error) {
+        console.error(
+          JSON.stringify({
+            message: 'Gemini YouTube summarization failed',
+            error: error instanceof Error ? error.message : String(error),
+          }),
+        )
+        throw new BadGatewayError('YouTubeの要約に失敗しました')
+      }
+
+      if (!output.isRecipeVideo) {
+        throw new UnprocessableEntityError(
+          '料理動画ではないためレシピを作成できません',
+        )
+      }
+
+      try {
+        return context.json(
+          v.parse(youtubeSummaryResponseSchema, {
+            name: output.title,
+            ingredients: output.ingredients.map(({ name, quantity }) => ({
+              name,
+              quantity: toRecipeIngredientQuantity(quantity),
+            })),
+            instructions: output.instructions,
+          }),
+        )
+      } catch (error) {
+        console.error(
+          JSON.stringify({
+            message: 'Gemini YouTube summarization output conversion failed',
+            error: error instanceof Error ? error.message : String(error),
+          }),
+        )
+        throw new BadGatewayError('YouTubeの要約に失敗しました')
+      }
+    },
+  )
+  .onError(onApiError)
 
 export default app
