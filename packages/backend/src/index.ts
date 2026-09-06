@@ -138,6 +138,7 @@ const app = new Hono<{ Bindings: Bindings }>()
   )
 
 app.onError((error, context) => {
+  // sValidator が不正な JSON を解析した際に送出する HTTPException を 400 として返す。
   if (
     error instanceof HTTPException &&
     error.status === 400 &&
