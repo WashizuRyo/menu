@@ -69,11 +69,18 @@ function RecipesPage() {
                   材料を眺めながら、次につくる一品を選びましょう。
                 </Text>
               </VStack>
-              <Button
-                label="新しいレシピ"
-                variant="primary"
-                href="/recipes/new"
-              />
+              <HStack gap={3} wrap="wrap">
+                <Button
+                  label="献立を作成"
+                  variant="secondary"
+                  href="/meal-plans/new"
+                />
+                <Button
+                  label="新しいレシピ"
+                  variant="primary"
+                  href="/recipes/new"
+                />
+              </HStack>
             </HStack>
 
             {recipes.data.recipes.length === 0 ? (

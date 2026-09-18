@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SplatRouteImport } from './routes/$'
+import { Route as MealPlansRouteImport } from './routes/meal-plans'
 import { Route as RecipesRouteImport } from './routes/recipes'
+import { Route as MealPlansNewRouteImport } from './routes/meal-plans/new'
 import { Route as RecipesIndexRouteImport } from './routes/recipes/index'
 import { Route as RecipesNewRouteImport } from './routes/recipes/new'
 
@@ -25,10 +27,20 @@ const SplatRoute = SplatRouteImport.update({
   path: '/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MealPlansRoute = MealPlansRouteImport.update({
+  id: '/meal-plans',
+  path: '/meal-plans',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RecipesRoute = RecipesRouteImport.update({
   id: '/recipes',
   path: '/recipes',
   getParentRoute: () => rootRouteImport,
+} as any)
+const MealPlansNewRoute = MealPlansNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => MealPlansRoute,
 } as any)
 const RecipesIndexRoute = RecipesIndexRouteImport.update({
   id: '/',
@@ -44,13 +56,17 @@ const RecipesNewRoute = RecipesNewRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/meal-plans': typeof MealPlansRouteWithChildren
   '/recipes': typeof RecipesRouteWithChildren
+  '/meal-plans/new': typeof MealPlansNewRoute
   '/recipes/new': typeof RecipesNewRoute
   '/recipes/': typeof RecipesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/meal-plans': typeof MealPlansRouteWithChildren
+  '/meal-plans/new': typeof MealPlansNewRoute
   '/recipes/new': typeof RecipesNewRoute
   '/recipes': typeof RecipesIndexRoute
 }
@@ -58,21 +74,40 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/meal-plans': typeof MealPlansRouteWithChildren
   '/recipes': typeof RecipesRouteWithChildren
+  '/meal-plans/new': typeof MealPlansNewRoute
   '/recipes/new': typeof RecipesNewRoute
   '/recipes/': typeof RecipesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$' | '/recipes' | '/recipes/new' | '/recipes/'
+  fullPaths:
+    | '/'
+    | '/$'
+    | '/meal-plans'
+    | '/recipes'
+    | '/meal-plans/new'
+    | '/recipes/new'
+    | '/recipes/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$' | '/recipes/new' | '/recipes'
-  id: '__root__' | '/' | '/$' | '/recipes' | '/recipes/new' | '/recipes/'
+  to:
+    '/' | '/$' | '/meal-plans' | '/meal-plans/new' | '/recipes/new' | '/recipes'
+  id:
+    | '__root__'
+    | '/'
+    | '/$'
+    | '/meal-plans'
+    | '/recipes'
+    | '/meal-plans/new'
+    | '/recipes/new'
+    | '/recipes/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SplatRoute: typeof SplatRoute
+  MealPlansRoute: typeof MealPlansRouteWithChildren
   RecipesRoute: typeof RecipesRouteWithChildren
 }
 
@@ -92,12 +127,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/meal-plans': {
+      id: '/meal-plans'
+      path: '/meal-plans'
+      fullPath: '/meal-plans'
+      preLoaderRoute: typeof MealPlansRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/recipes': {
       id: '/recipes'
       path: '/recipes'
       fullPath: '/recipes'
       preLoaderRoute: typeof RecipesRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/meal-plans/new': {
+      id: '/meal-plans/new'
+      path: '/new'
+      fullPath: '/meal-plans/new'
+      preLoaderRoute: typeof MealPlansNewRouteImport
+      parentRoute: typeof MealPlansRoute
     }
     '/recipes/': {
       id: '/recipes/'
@@ -116,6 +165,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface MealPlansRouteChildren {
+  MealPlansNewRoute: typeof MealPlansNewRoute
+}
+
+const MealPlansRouteChildren: MealPlansRouteChildren = {
+  MealPlansNewRoute: MealPlansNewRoute,
+}
+
+const MealPlansRouteWithChildren = MealPlansRoute._addFileChildren(
+  MealPlansRouteChildren,
+)
+
 interface RecipesRouteChildren {
   RecipesNewRoute: typeof RecipesNewRoute
   RecipesIndexRoute: typeof RecipesIndexRoute
@@ -132,6 +193,7 @@ const RecipesRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
+  MealPlansRoute: MealPlansRouteWithChildren,
   RecipesRoute: RecipesRouteWithChildren,
 }
 export const routeTree = rootRouteImport
