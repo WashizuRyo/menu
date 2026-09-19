@@ -16,9 +16,9 @@ import { Heading, Text } from '@astryxdesign/core/Text'
 import { valibotResolver } from '@hookform/resolvers/valibot'
 import {
   type CreateMealPlanInput,
+  isoDateStringSchema,
   MEAL_TYPES,
   type MealType,
-  mealPlanDateSchema,
   RecipeId,
 } from '@menu/shared'
 import {
@@ -37,7 +37,7 @@ import { createMealPlan } from '../../lib/api/meal-plan'
 import { getRecipes } from '../../lib/api/recipe'
 
 const mealPlanDayFormSchema = v.strictObject({
-  mealDate: mealPlanDateSchema,
+  mealDate: isoDateStringSchema,
   breakfast: v.nullable(RecipeId.schema),
   lunch: v.nullable(RecipeId.schema),
   dinner: v.nullable(RecipeId.schema),
@@ -45,8 +45,8 @@ const mealPlanDayFormSchema = v.strictObject({
 
 const createMealPlanFormSchema = v.pipe(
   v.strictObject({
-    startDate: mealPlanDateSchema,
-    endDate: mealPlanDateSchema,
+    startDate: isoDateStringSchema,
+    endDate: isoDateStringSchema,
     days: v.array(mealPlanDayFormSchema),
   }),
   v.transform(
@@ -109,8 +109,8 @@ function syncDays({
   currentDays: CreateMealPlanFormValues['days']
   replaceDays: (days: CreateMealPlanFormValues['days']) => void
 }) {
-  const parsedStartDate = v.safeParse(mealPlanDateSchema, startDate)
-  const parsedEndDate = v.safeParse(mealPlanDateSchema, endDate)
+  const parsedStartDate = v.safeParse(isoDateStringSchema, startDate)
+  const parsedEndDate = v.safeParse(isoDateStringSchema, endDate)
 
   if (
     !parsedStartDate.success ||
@@ -168,8 +168,8 @@ function NewMealPlanPage() {
   const days = useFieldArray({ control, name: 'days' })
   const startDate = useWatch({ control, name: 'startDate' })
   const endDate = useWatch({ control, name: 'endDate' })
-  const parsedStartDate = v.safeParse(mealPlanDateSchema, startDate)
-  const parsedEndDate = v.safeParse(mealPlanDateSchema, endDate)
+  const parsedStartDate = v.safeParse(isoDateStringSchema, startDate)
+  const parsedEndDate = v.safeParse(isoDateStringSchema, endDate)
   const mutation = useMutation({
     mutationFn: createMealPlan,
     onSuccess: async () => {
@@ -237,7 +237,7 @@ function NewMealPlanPage() {
                           }}
                           max={
                             parsedEndDate.success
-                              ? (parsedEndDate.output as ISODateString)
+                              ? parsedEndDate.output
                               : undefined
                           }
                           format="system_date"
@@ -273,7 +273,7 @@ function NewMealPlanPage() {
                           }}
                           min={
                             parsedStartDate.success
-                              ? (parsedStartDate.output as ISODateString)
+                              ? parsedStartDate.output
                               : undefined
                           }
                           format="system_date"

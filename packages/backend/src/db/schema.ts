@@ -1,5 +1,5 @@
 import type {
-  MealPlanDate,
+  ISODateString,
   MealPlanId,
   MealType,
   RecipeId,
@@ -37,8 +37,8 @@ export const recipes = sqliteTable('recipes', {
 export const mealPlans = sqliteTable('meal_plans', {
   dbId: integer('db_id').primaryKey({ autoIncrement: true }),
   id: text('id').$type<MealPlanId>().notNull().unique(),
-  startDate: text('start_date').$type<MealPlanDate>().notNull(),
-  endDate: text('end_date').$type<MealPlanDate>().notNull(),
+  startDate: text('start_date').$type<ISODateString>().notNull(),
+  endDate: text('end_date').$type<ISODateString>().notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .default(sql`(unixepoch())`)
     .notNull(),
@@ -53,7 +53,7 @@ export const mealPlanRecipes = sqliteTable(
     mealPlanDbId: integer('meal_plan_db_id')
       .notNull()
       .references(() => mealPlans.dbId, { onDelete: 'cascade' }),
-    mealDate: text('meal_date').$type<MealPlanDate>().notNull(),
+    mealDate: text('meal_date').$type<ISODateString>().notNull(),
     mealType: text('meal_type').$type<MealType>().notNull(),
     recipeDbId: integer('recipe_db_id')
       .notNull()
