@@ -2,10 +2,11 @@ import { sValidator } from '@hono/standard-validator'
 import {
   createMealPlanInputSchema,
   createRecipeInputSchema,
+  type MealPlan,
   MealPlanId,
   RecipeId,
 } from '@menu/shared'
-import { sql } from 'drizzle-orm'
+import { asc, desc, sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
@@ -38,6 +39,76 @@ const app = new Hono<{ Bindings: Bindings }>()
     return context.json(
       {
         recipes: recipeRows.map(toRecipe),
+      },
+      200,
+    )
+  })
+  .get('/api/meal-plans', async (context) => {
+    const db = drizzle(context.env.DB)
+    const rows = await db
+      .select({
+        mealPlan: mealPlans,
+        mealDate: mealPlanRecipes.mealDate,
+        mealType: mealPlanRecipes.mealType,
+        recipeId: recipes.id,
+        recipeName: recipes.name,
+      })
+      .from(mealPlans)
+      .innerJoin(
+        mealPlanRecipes,
+        sql`${mealPlanRecipes.mealPlanDbId} = ${mealPlans.dbId}`,
+      )
+      .innerJoin(recipes, sql`${mealPlanRecipes.recipeDbId} = ${recipes.dbId}`)
+      .orderBy(
+        desc(mealPlans.startDate),
+        desc(mealPlans.createdAt),
+        desc(mealPlans.id),
+        asc(mealPlanRecipes.mealDate),
+        sql`case ${mealPlanRecipes.mealType}
+          when 'breakfast' then 0
+          when 'lunch' then 1
+          when 'dinner' then 2
+        end`,
+        asc(recipes.id),
+      )
+
+    // JOIN結果は「献立1件 × レシピ割り当て1件」の形式になるため、
+    // APIレスポンスの「献立1件にrecipesをまとめる」形式へ組み立て直す。
+    // SQLで並べた順序を保つため、Mapの挿入順をそのままレスポンス順に利用する。
+    const grouped = new Map<
+      MealPlanId,
+      {
+        mealPlan: (typeof rows)[number]['mealPlan']
+        recipes: MealPlan['recipes']
+      }
+    >()
+    for (const row of rows) {
+      const current = grouped.get(row.mealPlan.id)
+      const recipe = {
+        mealDate: row.mealDate,
+        mealType: row.mealType,
+        recipeId: row.recipeId,
+        recipeName: row.recipeName,
+      } satisfies MealPlan['recipes'][number]
+
+      if (current) {
+        // 同じ献立に複数のレシピ割り当てがある場合は、同じ配列へ追加する。
+        current.recipes.push(recipe)
+      } else {
+        // 献立が初めて登場した行では、献立情報と最初の割り当てを登録する。
+        grouped.set(row.mealPlan.id, {
+          mealPlan: row.mealPlan,
+          recipes: [recipe],
+        })
+      }
+    }
+
+    // Mapに格納した献立を、共有のレスポンス形式へ変換して返す。
+    return context.json(
+      {
+        mealPlans: [...grouped.values()].map(({ mealPlan, recipes }) =>
+          toMealPlan(mealPlan, recipes),
+        ),
       },
       200,
     )
@@ -88,16 +159,36 @@ const app = new Hono<{ Bindings: Bindings }>()
       const input = context.req.valid('json')
 
       const serializedRecipes = JSON.stringify(input.recipes)
-      const [existingRecipeCount] = await db.all<{ value: number }>(sql`
-        select count(*) as value
+      const existingRecipeRows = await db.all<{
+        recipe_id: RecipeId
+        recipe_name: string
+      }>(sql`
+        select
+          json_extract(meal_recipe.value, '$.recipeId') as recipe_id,
+          ${recipes.name} as recipe_name
         from json_each(${serializedRecipes}) as meal_recipe
         inner join ${recipes}
           on ${recipes.id} = json_extract(meal_recipe.value, '$.recipeId')
+        order by meal_recipe.key
       `)
 
-      if (existingRecipeCount?.value !== input.recipes.length) {
+      if (existingRecipeRows.length !== input.recipes.length) {
         return context.json({ error: 'validation failed' }, 400)
       }
+
+      const recipeNames = new Map(
+        existingRecipeRows.map(({ recipe_id, recipe_name }) => [
+          recipe_id,
+          recipe_name,
+        ]),
+      )
+      const responseRecipes = input.recipes.map((recipe) => {
+        const recipeName = recipeNames.get(recipe.recipeId)
+        if (!recipeName) {
+          throw new Error('Failed to find meal plan recipe')
+        }
+        return { ...recipe, recipeName }
+      })
 
       const mealPlanId = MealPlanId.generate()
 
@@ -136,7 +227,7 @@ const app = new Hono<{ Bindings: Bindings }>()
       }
 
       return context.json(
-        { mealPlan: toMealPlan(mealPlanRow, input.recipes) },
+        { mealPlan: toMealPlan(mealPlanRow, responseRecipes) },
         201,
       )
     },

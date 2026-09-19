@@ -1,7 +1,7 @@
 import * as v from 'valibot'
 import { isoDateStringSchema } from '../date.js'
 import { createIdGenerator } from '../id.js'
-import { RecipeId } from '../recipe/schema.js'
+import { RecipeId, recipeNameSchema } from '../recipe/schema.js'
 import { MEAL_TYPES } from './constants.js'
 
 export const MealPlanId = createIdGenerator('mpln')
@@ -65,6 +65,7 @@ export const mealPlanSchema = v.pipe(
           mealDate: isoDateStringSchema,
           mealType: mealTypeSchema,
           recipeId: RecipeId.schema,
+          recipeName: recipeNameSchema,
         }),
       ),
       v.nonEmpty('レシピを1件以上選択してください'),
