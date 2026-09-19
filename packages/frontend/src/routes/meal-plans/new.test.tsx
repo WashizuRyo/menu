@@ -73,7 +73,7 @@ describe('新しい献立', () => {
     cleanup()
   })
 
-  it('期間とレシピの割当を一括保存してレシピ一覧へ戻る', async () => {
+  it('期間とレシピの割当を一括保存して献立一覧へ戻る', async () => {
     createMealPlanMock.mockResolvedValue({
       mealPlan: v.parse(mealPlanSchema, {
         id: MealPlanId.generate(),
@@ -119,7 +119,7 @@ describe('新しい献立', () => {
         },
       ],
     })
-    expect(router.state.location.pathname).toBe('/recipes')
+    expect(router.state.location.pathname).toBe('/meal-plans')
   })
 
   it('終了日は開始日より前の日付を選択できない', async () => {
@@ -218,16 +218,21 @@ describe('新しい献立', () => {
   })
 
   it('レシピ一覧の取得に失敗したらエラー画面を表示する', async () => {
-    getRecipesMock.mockRejectedValue(new Error('通信に失敗しました'))
+    getRecipesMock
+      .mockRejectedValueOnce(new Error('通信に失敗しました'))
+      .mockResolvedValue({ recipes: [] })
     renderPage()
 
     expect(
       await screen.findByText('献立作成画面を表示できませんでした'),
     ).toBeInTheDocument()
     expect(screen.getByText('通信に失敗しました')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '再試行' })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: '再試行' }))
+
     expect(
-      screen.queryByRole('heading', { name: '新しい献立' }),
-    ).not.toBeInTheDocument()
+      await screen.findByRole('heading', { name: '新しい献立' }),
+    ).toBeInTheDocument()
+    expect(getRecipesMock.mock.calls.length).toBeGreaterThan(1)
   })
 })

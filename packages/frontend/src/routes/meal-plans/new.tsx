@@ -172,7 +172,7 @@ function NewMealPlanPage() {
     mutationFn: createMealPlan,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['meal-plans'] })
-      await navigate({ to: '/recipes' })
+      await navigate({ to: '/meal-plans' })
     },
   })
 
@@ -372,7 +372,7 @@ function NewMealPlanPage() {
                 <Button
                   label="キャンセル"
                   variant="secondary"
-                  href="/recipes"
+                  href="/meal-plans"
                 />
                 <Button
                   label="献立を保存"
@@ -390,6 +390,8 @@ function NewMealPlanPage() {
 }
 
 function NewMealPlanError({ error, reset }: ErrorComponentProps) {
+  const queryClient = useQueryClient()
+
   return (
     <Layout
       height="auto"
@@ -406,7 +408,10 @@ function NewMealPlanError({ error, reset }: ErrorComponentProps) {
                 label="再試行"
                 size="sm"
                 variant="secondary"
-                onClick={reset}
+                onClick={() => {
+                  queryClient.removeQueries({ queryKey: ['recipes'] })
+                  reset()
+                }}
               />
             }
           />

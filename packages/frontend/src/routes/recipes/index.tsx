@@ -71,9 +71,9 @@ function RecipesPage() {
               </VStack>
               <HStack gap={3} wrap="wrap">
                 <Button
-                  label="献立を作成"
+                  label="献立一覧"
                   variant="secondary"
-                  href="/meal-plans/new"
+                  href="/meal-plans"
                 />
                 <Button
                   label="新しいレシピ"
