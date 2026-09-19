@@ -207,6 +207,13 @@ describe('新しい献立', () => {
       await screen.findByText('レシピを1件以上選択してください'),
     ).toBeInTheDocument()
     expect(createMealPlanMock).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('combobox', { name: '2026-09-21 夕食' }))
+    await user.keyboard('{ArrowDown}{Enter}')
+
+    expect(
+      screen.queryByText('レシピを1件以上選択してください'),
+    ).not.toBeInTheDocument()
   })
 
   it('レシピ一覧の取得に失敗したらエラー画面を表示する', async () => {

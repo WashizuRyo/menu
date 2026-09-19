@@ -336,7 +336,13 @@ function NewMealPlanPage() {
                                   label={`${row.mealDate} ${getMealTypeLabel(mealType)}`}
                                   isLabelHidden
                                   value={field.value ?? ''}
-                                  onChange={field.onChange}
+                                  onChange={(value) => {
+                                    field.onChange(value)
+
+                                    if (value) {
+                                      clearErrors('days')
+                                    }
+                                  }}
                                   options={recipeOptions}
                                   placeholder="未設定"
                                   hasClear
