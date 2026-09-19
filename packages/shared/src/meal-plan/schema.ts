@@ -1,4 +1,5 @@
 import * as v from 'valibot'
+import { isoDateStringSchema } from '../date.js'
 import { createIdGenerator } from '../id.js'
 import { RecipeId } from '../recipe/schema.js'
 import { MEAL_TYPES } from './constants.js'
@@ -6,31 +7,15 @@ import { MEAL_TYPES } from './constants.js'
 export const MealPlanId = createIdGenerator('mpln')
 export type MealPlanId = v.InferOutput<typeof MealPlanId.schema>
 
-const isValidCalendarDate = (value: string): boolean => {
-  // Dateは存在しない日付を自動補正するため、変換後の日付と元の値を比較する。
-  const date = new Date(`${value}T00:00:00.000Z`)
-
-  return (
-    !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value
-  )
-}
-
-export const mealPlanDateSchema = v.pipe(
-  v.string(),
-  v.isoDate('YYYY-MM-DD形式の日付を入力してください'),
-  v.check(isValidCalendarDate, '実在する日付を入力してください'),
-  v.brand('MealPlanDate'),
-)
-
 export const mealTypeSchema = v.picklist(MEAL_TYPES)
 
 export const createMealPlanInputSchema = v.pipe(
   v.strictObject({
-    startDate: mealPlanDateSchema,
-    endDate: mealPlanDateSchema,
+    startDate: isoDateStringSchema,
+    endDate: isoDateStringSchema,
     recipes: v.array(
       v.strictObject({
-        mealDate: mealPlanDateSchema,
+        mealDate: isoDateStringSchema,
         mealType: mealTypeSchema,
         recipeId: RecipeId.schema,
       }),
@@ -69,11 +54,11 @@ export const createMealPlanInputSchema = v.pipe(
 export const mealPlanSchema = v.pipe(
   v.strictObject({
     id: MealPlanId.schema,
-    startDate: mealPlanDateSchema,
-    endDate: mealPlanDateSchema,
+    startDate: isoDateStringSchema,
+    endDate: isoDateStringSchema,
     recipes: v.array(
       v.strictObject({
-        mealDate: mealPlanDateSchema,
+        mealDate: isoDateStringSchema,
         mealType: mealTypeSchema,
         recipeId: RecipeId.schema,
       }),

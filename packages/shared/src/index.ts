@@ -1,5 +1,6 @@
 export type { ApiErrorResponse } from './api-error.js'
 export { apiErrorSchema } from './api-error.js'
+export { type ISODateString, isoDateStringSchema } from './date.js'
 export * from './id.js'
 export * from './meal-plan/index.js'
 export * from './recipe/index.js'
