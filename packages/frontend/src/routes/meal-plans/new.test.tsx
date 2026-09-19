@@ -162,6 +162,10 @@ describe('新しい献立', () => {
     const endDateInput = screen.getByRole('combobox', { name: '終了日' })
     await user.type(startDateInput, '2026-09-21')
     await user.type(endDateInput, '2026-09-22')
+    await user.click(
+      await screen.findByRole('combobox', { name: '2026-09-21 夕食' }),
+    )
+    await user.keyboard('{ArrowDown}{Enter}')
     await user.click(screen.getByRole('button', { name: '献立を保存' }))
 
     expect(
@@ -182,6 +186,26 @@ describe('新しい献立', () => {
     expect(
       await screen.findAllByText('YYYY-MM-DD形式の日付を入力してください'),
     ).toHaveLength(2)
+    expect(createMealPlanMock).not.toHaveBeenCalled()
+  })
+
+  it('レシピが未選択ならエラーを表示して保存しない', async () => {
+    const user = userEvent.setup()
+    renderPage()
+
+    const startDateInput = await screen.findByRole('combobox', {
+      name: '開始日',
+    })
+    const endDateInput = screen.getByRole('combobox', { name: '終了日' })
+    fireEvent.change(startDateInput, { target: { value: '2026-09-21' } })
+    fireEvent.change(endDateInput, { target: { value: '2026-09-22' } })
+    fireEvent.blur(endDateInput)
+    await screen.findByRole('combobox', { name: '2026-09-21 夕食' })
+    await user.click(screen.getByRole('button', { name: '献立を保存' }))
+
+    expect(
+      await screen.findByText('レシピを1件以上選択してください'),
+    ).toBeInTheDocument()
     expect(createMealPlanMock).not.toHaveBeenCalled()
   })
 

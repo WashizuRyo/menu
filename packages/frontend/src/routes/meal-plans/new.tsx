@@ -16,6 +16,7 @@ import { Heading, Text } from '@astryxdesign/core/Text'
 import { valibotResolver } from '@hookform/resolvers/valibot'
 import {
   type CreateMealPlanInput,
+  createMealPlanInputSchema,
   isoDateStringSchema,
   MEAL_TYPES,
   type MealType,
@@ -153,18 +154,15 @@ function NewMealPlanPage() {
     queryKey: ['recipes'],
     queryFn: getRecipes,
   })
-  const { control, getValues, handleSubmit } = useForm<
-    CreateMealPlanFormValues,
-    unknown,
-    CreateMealPlanInput
-  >({
-    defaultValues: {
-      startDate: '',
-      endDate: '',
-      days: [],
-    },
-    resolver: valibotResolver(createMealPlanFormSchema),
-  })
+  const { clearErrors, control, formState, getValues, handleSubmit, setError } =
+    useForm<CreateMealPlanFormValues, unknown, CreateMealPlanInput>({
+      defaultValues: {
+        startDate: '',
+        endDate: '',
+        days: [],
+      },
+      resolver: valibotResolver(createMealPlanFormSchema),
+    })
   const days = useFieldArray({ control, name: 'days' })
   const startDate = useWatch({ control, name: 'startDate' })
   const endDate = useWatch({ control, name: 'endDate' })
@@ -189,7 +187,19 @@ function NewMealPlanPage() {
       padding={6}
       content={
         <LayoutContent role="main">
-          <form onSubmit={handleSubmit((input) => mutation.mutate(input))}>
+          <form
+            onSubmit={handleSubmit((input) => {
+              const result = v.safeParse(createMealPlanInputSchema, input)
+
+              if (!result.success) {
+                setError('days', { message: result.issues[0]?.message })
+                return
+              }
+
+              clearErrors('days')
+              mutation.mutate(result.output)
+            })}
+          >
             <VStack gap={6}>
               <VStack gap={2}>
                 <Heading level={1}>新しい献立</Heading>
@@ -290,52 +300,60 @@ function NewMealPlanPage() {
               </Section>
 
               {days.fields.length > 0 ? (
-                <Section padding={0}>
-                  <Table
-                    data={days.fields.map((day, index) => ({
-                      fieldId: day.id,
-                      index,
-                      mealDate: day.mealDate,
-                    }))}
-                    columns={[
-                      {
-                        key: 'mealDate',
-                        header: '日付',
-                        width: proportional(1),
-                        renderCell: (row) => (
-                          <Text weight="semibold">{row.mealDate}</Text>
-                        ),
-                      },
-                      ...MEAL_TYPES.map((mealType) => ({
-                        key: mealType,
-                        header: getMealTypeLabel(mealType),
-                        width: proportional(1),
-                        renderCell: (row: MealPlanTableRow) => (
-                          <Controller
-                            control={control}
-                            name={`days.${row.index}.${mealType}`}
-                            render={({ field }) => (
-                              <Selector
-                                label={`${row.mealDate} ${getMealTypeLabel(mealType)}`}
-                                isLabelHidden
-                                value={field.value ?? ''}
-                                onChange={field.onChange}
-                                options={recipeOptions}
-                                placeholder="未設定"
-                                hasClear
-                                width="100%"
-                                isDisabled={mutation.isPending}
-                              />
-                            )}
-                          />
-                        ),
-                      })),
-                    ]}
-                    idKey="fieldId"
-                    dividers="grid"
-                    verticalAlign="middle"
-                  />
-                </Section>
+                <VStack gap={3}>
+                  {formState.errors.days?.message ? (
+                    <Banner
+                      status="error"
+                      title={formState.errors.days.message}
+                    />
+                  ) : null}
+                  <Section padding={0}>
+                    <Table
+                      data={days.fields.map((day, index) => ({
+                        fieldId: day.id,
+                        index,
+                        mealDate: day.mealDate,
+                      }))}
+                      columns={[
+                        {
+                          key: 'mealDate',
+                          header: '日付',
+                          width: proportional(1),
+                          renderCell: (row) => (
+                            <Text weight="semibold">{row.mealDate}</Text>
+                          ),
+                        },
+                        ...MEAL_TYPES.map((mealType) => ({
+                          key: mealType,
+                          header: getMealTypeLabel(mealType),
+                          width: proportional(1),
+                          renderCell: (row: MealPlanTableRow) => (
+                            <Controller
+                              control={control}
+                              name={`days.${row.index}.${mealType}`}
+                              render={({ field }) => (
+                                <Selector
+                                  label={`${row.mealDate} ${getMealTypeLabel(mealType)}`}
+                                  isLabelHidden
+                                  value={field.value ?? ''}
+                                  onChange={field.onChange}
+                                  options={recipeOptions}
+                                  placeholder="未設定"
+                                  hasClear
+                                  width="100%"
+                                  isDisabled={mutation.isPending}
+                                />
+                              )}
+                            />
+                          ),
+                        })),
+                      ]}
+                      idKey="fieldId"
+                      dividers="grid"
+                      verticalAlign="middle"
+                    />
+                  </Section>
+                </VStack>
               ) : (
                 <Section padding={5}>
                   <Text color="secondary">
