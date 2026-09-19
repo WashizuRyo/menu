@@ -84,6 +84,7 @@ describe('新しい献立', () => {
             mealDate: '2026-09-21',
             mealType: 'dinner',
             recipeId,
+            recipeName: '味噌汁',
           },
         ],
         createdAt: '2026-09-19T00:00:00.000Z',
