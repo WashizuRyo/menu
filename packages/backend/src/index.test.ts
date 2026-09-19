@@ -227,7 +227,8 @@ describe('POST /api/meal-plans', () => {
     })
   })
 
-  test('レシピが未割り当てでも献立を作成できる', async () => {
+  test('レシピが未割り当ての献立は作成できない', async () => {
+    const env = await worker.getEnv()
     const response = await server.fetch('/api/meal-plans', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -238,17 +239,13 @@ describe('POST /api/meal-plans', () => {
       }),
     })
 
-    expect(response.status).toBe(201)
-    expect(await response.json()).toEqual({
-      mealPlan: {
-        id: expect.stringMatching(/^mpln_[0-9A-Za-z]{16}$/),
-        startDate: '2026-09-07',
-        endDate: '2026-09-13',
-        recipes: [],
-        createdAt: expect.any(String),
-        updatedAt: expect.any(String),
-      },
-    })
+    const mealPlanCount = await env.DB.prepare(
+      'SELECT count(*) AS value FROM meal_plans',
+    ).first<{ value: number }>()
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ error: 'validation failed' })
+    expect(mealPlanCount?.value).toBe(0)
   })
 
   test('存在しないレシピは割り当てられない', async () => {
@@ -342,7 +339,25 @@ describe('POST /api/meal-plans', () => {
   })
 
   test('献立の保存に失敗した場合は500を返す', async () => {
+    const recipeId = RecipeId.generate()
     const env = await worker.getEnv()
+    await env.DB.prepare(
+      `INSERT INTO recipes (
+        id,
+        name,
+        ingredients,
+        instructions,
+        source
+      ) VALUES (?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        recipeId,
+        '味噌汁',
+        JSON.stringify([]),
+        JSON.stringify([]),
+        JSON.stringify({ type: 'manual' }),
+      )
+      .run()
     await env.DB.exec('DROP TABLE meal_plan_recipes')
 
     const response = await server.fetch('/api/meal-plans', {
@@ -351,7 +366,13 @@ describe('POST /api/meal-plans', () => {
       body: JSON.stringify({
         startDate: '2026-09-07',
         endDate: '2026-09-13',
-        recipes: [],
+        recipes: [
+          {
+            mealDate: '2026-09-07',
+            mealType: 'dinner',
+            recipeId,
+          },
+        ],
       }),
     })
 

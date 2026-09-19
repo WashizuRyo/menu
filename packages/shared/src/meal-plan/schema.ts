@@ -13,12 +13,15 @@ export const createMealPlanInputSchema = v.pipe(
   v.strictObject({
     startDate: isoDateStringSchema,
     endDate: isoDateStringSchema,
-    recipes: v.array(
-      v.strictObject({
-        mealDate: isoDateStringSchema,
-        mealType: mealTypeSchema,
-        recipeId: RecipeId.schema,
-      }),
+    recipes: v.pipe(
+      v.array(
+        v.strictObject({
+          mealDate: isoDateStringSchema,
+          mealType: mealTypeSchema,
+          recipeId: RecipeId.schema,
+        }),
+      ),
+      v.nonEmpty('レシピを1件以上選択してください'),
     ),
   }),
   v.forward(
@@ -56,12 +59,15 @@ export const mealPlanSchema = v.pipe(
     id: MealPlanId.schema,
     startDate: isoDateStringSchema,
     endDate: isoDateStringSchema,
-    recipes: v.array(
-      v.strictObject({
-        mealDate: isoDateStringSchema,
-        mealType: mealTypeSchema,
-        recipeId: RecipeId.schema,
-      }),
+    recipes: v.pipe(
+      v.array(
+        v.strictObject({
+          mealDate: isoDateStringSchema,
+          mealType: mealTypeSchema,
+          recipeId: RecipeId.schema,
+        }),
+      ),
+      v.nonEmpty('レシピを1件以上選択してください'),
     ),
     createdAt: v.pipe(v.string(), v.isoTimestamp()),
     updatedAt: v.pipe(v.string(), v.isoTimestamp()),
